@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#1a1a1a" />
+  <title>Inventory</title>
+  <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+
+  <style>
+    /* =====================================================
+       CSS RESET & VARIABEL
+       ===================================================== */
+    *, *::before, *::after {
+      box-sizing  : border-box;
+      margin      : 0;
+      padding     : 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --c-bg        : #ffffff;
+      --c-bg-2      : #f5f5f5;
+      --c-bg-3      : #e8e8e8;
+      --c-text      : #0a0a0a;
+      --c-text-2    : #555555;
+      --c-border    : #d0d0d0;
+      --c-accent    : #1a1a1a;
+      --c-in        : #16a34a;
+      --c-in-bg     : #f0fdf4;
+      --c-out       : #dc2626;
+      --c-out-bg    : #fef2f2;
+      --radius-sm   : 4px;
+      --radius-md   : 6px;
+      --radius-lg   : 10px;
+      --font-main   : system-ui, -apple-system, sans-serif;
+      --font-mono   : 'Courier New', monospace;
+
+      /* Touch target minimum */
+      --touch-min   : 44px;
+    }
+
+    html {
+      /* Mencegah zoom saat focus input di iOS */
+      font-size: 16px;
+    }
+
+    body {
+      font-family      : var(--font-main);
+      background       : var(--c-bg-2);
+      color            : var(--c-text);
+      min-height       : 100vh;
+      min-height       : 100dvh; /* dynamic viewport height untuk mobile */
+      padding          : 1rem;
+      padding-bottom   : 2rem;
+    }
+
+    /* =====================================================
+       LAYOUT UTAMA
+       ===================================================== */
+    .container {
+      max-width : 760px;
+      margin    : 0 auto;
+    }
+
+    /* =====================================================
+       HEADER
+       ===================================================== */
+    .header {
+      display         : flex;
+      align-items     : center;
+      justify-content : space-between;
+      margin-bottom   : 1.25rem;
+      padding-bottom  : 0.875rem;
+      border-bottom   : 1.5px solid var(--c-accent);
+    }
+
+    .logo {
+      font-size      : 15px;
+      font-weight    : 600;
+      letter-spacing : 0.08em;
+      text-transform : uppercase;
+    }
+
+    .logo span {
+      font-weight : 400;
+      color       : var(--c-text-2);
+    }
+
+    .header-right {
+      display     : flex;
+      align-items : center;
+      gap         : 10px;
+    }
+
+    .clock {
+      font-size            : 12px;
+      color                : var(--c-text-2);
+      font-variant-numeric : tabular-nums;
+      letter-spacing       : 0.05em;
+    }
+
+    /* =====================================================
+       SWITCH MODE — MASUK / KELUAR
+       ===================================================== */
+    .switch-row {
+      display       : flex;
+      margin-bottom : 1rem;
+      border        : 1.5px solid var(--c-accent);
+      border-radius : var(--radius-md);
+      overflow      : hidden;
+    }
+
+    .sw-btn {
+      flex           : 1;
+      padding        : 12px 0;          /* lebih tinggi untuk touch */
+      font-size      : 13px;
+      font-weight    : 500;
+      letter-spacing : 0.06em;
+      text-transform : uppercase;
+      border         : none;
+      cursor         : pointer;
+      background     : transparent;
+      color          : var(--c-text-2);
+      transition     : background 0.15s, color 0.15s;
+      min-height     : var(--touch-min);
+    }
+
+    .sw-btn.active-in  { background: var(--c-in);  color: #fff; }
+    .sw-btn.active-out { background: var(--c-out); color: #fff; }
+
+    /* =====================================================
+       BADGE MODE AKTIF
+       ===================================================== */
+    .mode-badge {
+      display        : inline-flex;
+      align-items    : center;
+      gap            : 6px;
+      font-size      : 11px;
+      font-weight    : 500;
+      letter-spacing : 0.08em;
+      text-transform : uppercase;
+      padding        : 4px 10px;
+      border-radius  : var(--radius-sm);
+      margin-bottom  : 0.875rem;
+    }
+
+    .mode-badge.in  { background: var(--c-in-bg);  color: var(--c-in);  }
+    .mode-badge.out { background: var(--c-out-bg); color: var(--c-out); }
+
+    .dot {
+      width         : 6px;
+      height        : 6px;
+      border-radius : 50%;
+      flex-shrink   : 0;
+    }
+
+    .dot.in  { background: var(--c-in);  }
+    .dot.out { background: var(--c-out); }
+
+    /* =====================================================
+       FORM INPUT
+       ===================================================== */
+    .form-card {
+      background    : var(--c-bg);
+      border        : 1px solid var(--c-border);
+      border-radius : var(--radius-lg);
+      padding       : 1rem;
+      margin-bottom : 1rem;
+    }
+
+    .form-row {
+      display               : grid;
+      grid-template-columns : 1fr auto;
+      gap                   : 8px;
+      align-items           : flex-end;
+      margin-bottom         : 10px;
+    }
+
+    .form-grid-2 {
+      display               : grid;
+      grid-template-columns : 1fr 1fr;
+      gap                   : 8px;
+      margin-bottom         : 10px;
+    }
+
+    .form-group {
+      display        : flex;
+      flex-direction : column;
+      gap            : 5px;
+    }
+
+    label {
+      font-size      : 11px;
+      font-weight    : 500;
+      letter-spacing : 0.07em;
+      text-transform : uppercase;
+      color          : var(--c-text-2);
+    }
+
+    /* Input — font-size 16px WAJIB agar iOS tidak auto-zoom */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"] {
+      width          : 100%;
+      padding        : 10px 12px;
+      font-size      : 16px;            /* PENTING: mencegah zoom iOS */
+      font-family    : var(--font-mono);
+      border         : 1px solid var(--c-border);
+      border-radius  : var(--radius-sm);
+      background     : var(--c-bg);
+      color          : var(--c-text);
+      transition     : border-color 0.15s;
+      min-height     : var(--touch-min);
+      -webkit-appearance: none;
+      appearance     : none;
+    }
+
+    input:focus {
+      outline      : none;
+      border-color : var(--c-accent);
+    }
+
+    /* =====================================================
+       TOMBOL SCAN
+       ===================================================== */
+    .scan-btn {
+      display        : flex;
+      align-items    : center;
+      justify-content: center;
+      gap            : 6px;
+      padding        : 0 14px;
+      height         : var(--touch-min);
+      background     : var(--c-accent);
+      color          : #fff;
+      border         : none;
+      border-radius  : var(--radius-sm);
+      cursor         : pointer;
+      font-size      : 13px;
+      font-weight    : 500;
+      white-space    : nowrap;
+      transition     : opacity 0.15s;
+      flex-shrink    : 0;
+    }
+
+    .scan-btn:active { opacity: 0.7; }
+
+    .scan-btn svg {
+      width  : 16px;
+      height : 16px;
+    }
+
+    /* =====================================================
+       TOMBOL SUBMIT
+       ===================================================== */
+    .submit-btn {
+      width          : 100%;
+      padding        : 13px;
+      font-size      : 14px;
+      font-weight    : 500;
+      letter-spacing : 0.07em;
+      text-transform : uppercase;
+      border         : none;
+      border-radius  : var(--radius-md);
+      cursor         : pointer;
+      transition     : opacity 0.15s, transform 0.1s;
+      margin-top     : 4px;
+      min-height     : var(--touch-min);
+    }
+
+    .submit-btn.in  { background: var(--c-in);  color: #fff; }
+    .submit-btn.out { background: var(--c-out); color: #fff; }
+
+    .submit-btn:active { transform: scale(0.98); opacity: 0.88; }
+
+    /* =====================================================
+       STATISTIK
+       ===================================================== */
+    .stats-row {
+      display               : grid;
+      grid-template-columns : 1fr 1fr 1fr;
+      gap                   : 8px;
+      margin-bottom         : 1rem;
+    }
+
+    .stat-card {
+      background    : var(--c-bg);
+      border        : 1px solid var(--c-border);
+      border-radius : var(--radius-md);
+      padding       : 10px 12px;
+    }
+
+    .stat-label {
+      font-size      : 10px;
+      font-weight    : 500;
+      letter-spacing : 0.07em;
+      text-transform : uppercase;
+      color          : var(--c-text-2);
+      margin-bottom  : 4px;
+    }
+
+    .stat-val {
+      font-size            : 22px;
+      font-weight          : 500;
+      font-variant-numeric : tabular-nums;
+      line-height          : 1;
+    }
+
+    .stat-val.in  { color: var(--c-in);  }
+    .stat-val.out { color: var(--c-out); }
+
+    /* =====================================================
+       SECTION RIWAYAT
+       ===================================================== */
+    .section-header {
+      display         : flex;
+      align-items     : center;
+      justify-content : space-between;
+      margin-bottom   : 8px;
+      flex-wrap       : wrap;
+      gap             : 6px;
+    }
+
+    .section-title {
+      font-size      : 11px;
+      font-weight    : 500;
+      letter-spacing : 0.08em;
+      text-transform : uppercase;
+      color          : var(--c-text-2);
+    }
+
+    .btn-actions {
+      display : flex;
+      gap     : 6px;
+    }
+
+    .btn-small {
+      font-size      : 10px;
+      color          : var(--c-text-2);
+      background     : none;
+      border         : 1px solid var(--c-border);
+      border-radius  : var(--radius-sm);
+      padding        : 5px 10px;
+      cursor         : pointer;
+      transition     : background 0.15s;
+      min-height     : 30px;
+    }
+
+    .btn-small:active { background: var(--c-bg-3); }
+
+    /* =====================================================
+       FILTER
+       ===================================================== */
+    .filter-row {
+      display       : flex;
+      gap           : 6px;
+      margin-bottom : 8px;
+    }
+
+    .filter-btn {
+      padding        : 6px 12px;
+      font-size      : 11px;
+      font-weight    : 500;
+      letter-spacing : 0.05em;
+      text-transform : uppercase;
+      border         : 1px solid var(--c-border);
+      border-radius  : var(--radius-sm);
+      background     : transparent;
+      color          : var(--c-text-2);
+      cursor         : pointer;
+      transition     : background 0.15s, color 0.15s;
+      min-height     : 32px;
+    }
+
+    .filter-btn.active {
+      background   : var(--c-accent);
+      color        : #fff;
+      border-color : var(--c-accent);
+    }
+
+    /* =====================================================
+       TABEL RIWAYAT — Desktop
+       ===================================================== */
+    .table-wrap {
+      background    : var(--c-bg);
+      border        : 1px solid var(--c-border);
+      border-radius : var(--radius-lg);
+      overflow      : hidden;
+    }
+
+    table {
+      width           : 100%;
+      border-collapse : collapse;
+      font-size       : 13px;
+    }
+
+    thead th {
+      font-size      : 10px;
+      font-weight    : 500;
+      letter-spacing : 0.07em;
+      text-transform : uppercase;
+      color          : var(--c-text-2);
+      padding        : 8px 10px;
+      text-align     : left;
+      border-bottom  : 1px solid var(--c-border);
+      background     : var(--c-bg-2);
+    }
+
+    tbody td {
+      padding       : 9px 10px;
+      border-bottom : 0.5px solid var(--c-border);
+      color         : var(--c-text);
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    .td-barcode { font-family: var(--font-mono); font-size: 12px; }
+    .td-qty     { text-align: right; font-weight: 500; }
+    .td-note    { color: var(--c-text-2); font-size: 12px; }
+
+    /* =====================================================
+       KARTU MOBILE — tampil di HP, sembunyikan tabel
+       ===================================================== */
+    .card-list   { display: none; }
+    .record-card {
+      background    : var(--c-bg);
+      border-bottom : 1px solid var(--c-border);
+      padding       : 12px;
+    }
+
+    .record-card:last-child { border-bottom: none; }
+
+    .rc-top {
+      display         : flex;
+      align-items     : flex-start;
+      justify-content : space-between;
+      margin-bottom   : 6px;
+    }
+
+    .rc-name {
+      font-size   : 14px;
+      font-weight : 500;
+      color       : var(--c-text);
+      flex        : 1;
+      margin-right: 8px;
+    }
+
+    .rc-qty {
+      font-size   : 16px;
+      font-weight : 600;
+      color       : var(--c-text);
+    }
+
+    .rc-meta {
+      display     : flex;
+      align-items : center;
+      gap         : 8px;
+      flex-wrap   : wrap;
+    }
+
+    .rc-barcode {
+      font-family : var(--font-mono);
+      font-size   : 11px;
+      color       : var(--c-text-2);
+    }
+
+    .rc-date {
+      font-size : 11px;
+      color     : var(--c-text-2);
+    }
+
+    .rc-note {
+      font-size : 11px;
+      color     : var(--c-text-2);
+      font-style: italic;
+    }
+
+    /* =====================================================
+       BADGE TIPE
+       ===================================================== */
+    .tag {
+      display        : inline-block;
+      font-size      : 10px;
+      font-weight    : 500;
+      padding        : 2px 7px;
+      border-radius  : var(--radius-sm);
+      text-transform : uppercase;
+      letter-spacing : 0.05em;
+      white-space    : nowrap;
+    }
+
+    .tag.in  { background: var(--c-in-bg);  color: var(--c-in);  }
+    .tag.out { background: var(--c-out-bg); color: var(--c-out); }
+
+    /* =====================================================
+       EMPTY STATE
+       ===================================================== */
+    .empty {
+      text-align : center;
+      padding    : 2.5rem 1rem;
+      color      : var(--c-text-2);
+      font-size  : 13px;
+    }
+
+    /* =====================================================
+       TOAST NOTIFIKASI
+       ===================================================== */
+    .toast {
+      position       : fixed;
+      bottom         : 24px;
+      left           : 50%;
+      transform      : translateX(-50%) translateY(60px);
+      background     : var(--c-accent);
+      color          : #fff;
+      padding        : 10px 20px;
+      border-radius  : var(--radius-md);
+      font-size      : 13px;
+      font-weight    : 500;
+      opacity        : 0;
+      transition     : transform 0.25s, opacity 0.25s;
+      z-index        : 999;
+      pointer-events : none;
+      white-space    : nowrap;
+      max-width      : calc(100vw - 32px);
+      text-align     : center;
+    }
+
+    .toast.show {
+      opacity   : 1;
+      transform : translateX(-50%) translateY(0);
+    }
+
+    /* =====================================================
+       OVERLAY SCANNER
+       ===================================================== */
+    .scan-overlay {
+      display         : none;
+      position        : fixed;
+      inset           : 0;
+      background      : rgba(0, 0, 0, 0.82);
+      z-index         : 100;
+      align-items     : flex-end;   /* slide-up dari bawah di mobile */
+      justify-content : center;
+    }
+
+    .scan-overlay.open { display: flex; }
+
+    .scan-modal {
+      background    : var(--c-bg);
+      border-radius : var(--radius-lg) var(--radius-lg) 0 0;
+      padding       : 1.25rem;
+      width         : 100%;
+      max-width     : 480px;
+      max-height    : 92vh;
+      max-height    : 92dvh;
+      overflow-y    : auto;
+      text-align    : center;
+    }
+
+    /* Handle bar — visual khas bottom sheet mobile */
+    .scan-handle {
+      width         : 36px;
+      height        : 4px;
+      background    : var(--c-border);
+      border-radius : 2px;
+      margin        : 0 auto 14px;
+    }
+
+    .scan-modal-title {
+      font-size      : 13px;
+      font-weight    : 500;
+      text-transform : uppercase;
+      letter-spacing : 0.08em;
+      margin-bottom  : 12px;
+    }
+
+    .scan-viewport {
+      position        : relative;
+      width           : 100%;
+      aspect-ratio    : 4 / 3;
+      background      : #111;
+      border-radius   : var(--radius-md);
+      overflow        : hidden;
+      margin-bottom   : 12px;
+      display         : flex;
+      align-items     : center;
+      justify-content : center;
+    }
+
+    .scan-viewport video {
+      width      : 100%;
+      height     : 100%;
+      object-fit : cover;
+      display    : block;
+    }
+
+    .scan-line {
+      position   : absolute;
+      width      : 70%;
+      height     : 2px;
+      background : #22c55e;
+      left       : 15%;
+      animation  : scanline 1.5s linear infinite;
+    }
+
+    @keyframes scanline {
+      0%   { top: 15%; }
+      50%  { top: 80%; }
+      100% { top: 15%; }
+    }
+
+    .scan-hint {
+      font-size     : 12px;
+      color         : var(--c-text-2);
+      margin-bottom : 12px;
+    }
+
+    .scan-divider {
+      font-size      : 11px;
+      color          : #aaa;
+      text-transform : uppercase;
+      letter-spacing : 0.06em;
+      margin         : 10px 0;
+    }
+
+    .scan-modal input[type="text"] {
+      margin-bottom : 10px;
+      font-family   : var(--font-mono);
+      text-align    : center;
+    }
+
+    .scan-close-btn {
+      width          : 100%;
+      padding        : 12px;
+      background     : var(--c-accent);
+      color          : #fff;
+      border         : none;
+      border-radius  : var(--radius-sm);
+      cursor         : pointer;
+      font-size      : 14px;
+      font-weight    : 500;
+      min-height     : var(--touch-min);
+    }
+
+    .scan-close-btn:active { opacity: 0.85; }
+
+    /* =====================================================
+       RESPONSIVE — TABLET (max 600px)
+       ===================================================== */
+    @media (max-width: 600px) {
+
+      body { padding: 0.75rem; padding-bottom: 2rem; }
+
+      /* Statistik — 3 kolom tetap tapi lebih compact */
+      .stats-row { gap: 6px; }
+
+      .stat-card { padding: 8px 10px; }
+
+      .stat-label { font-size: 9px; }
+
+      .stat-val { font-size: 18px; }
+
+      /* Sembunyikan keterangan di tabel */
+      .col-hide { display: none; }
+    }
+
+    /* =====================================================
+       RESPONSIVE — MOBILE (max 480px)
+       ===================================================== */
+    @media (max-width: 480px) {
+
+      /* Form grid — 1 kolom di HP */
+      .form-grid-2 { grid-template-columns: 1fr; }
+
+      /* Ganti tabel dengan kartu */
+      .table-desktop { display: none; }
+      .card-list      { display: block; }
+
+      /* Statistik — 3 kolom tetap dengan font lebih kecil */
+      .stat-val   { font-size: 16px; }
+      .stat-label { font-size: 8px; }
+
+      /* Scanner modal full bottom sheet */
+      .scan-modal {
+        border-radius: 16px 16px 0 0;
+        padding      : 1rem;
+      }
+    }
+
+    /* =====================================================
+       SAFE AREA — notch iPhone / Android
+       ===================================================== */
+    @supports (padding: env(safe-area-inset-bottom)) {
+      body {
+        padding-bottom : calc(2rem + env(safe-area-inset-bottom));
+      }
+
+      .toast {
+        bottom : calc(24px + env(safe-area-inset-bottom));
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- ===================================================
+         HEADER
+         =================================================== -->
+    <header class="header">
+      <div class="logo">Inventory <span>Lottemart</span></div>
+      <div class="header-right">
+        <div class="clock" id="clock">--:--:--</div>
+      </div>
+    </header>
+
+    <!-- ===================================================
+         SWITCH MODE
+         =================================================== -->
+    <div class="switch-row">
+      <button class="sw-btn active-in" id="btn-in"  onclick="setMode('in')">▲ Data Masuk</button>
+      <button class="sw-btn"           id="btn-out" onclick="setMode('out')">▼ Data Keluar</button>
+    </div>
+
+    <div class="mode-badge in" id="mode-badge">
+      <span class="dot in"></span> Mode: Data Masuk
+    </div>
+
+    <!-- ===================================================
+         FORM INPUT
+         =================================================== -->
+    <div class="form-card">
+
+      <!-- Barcode + tombol scan -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="inp-barcode">Barcode / Kode Barang</label>
+          <input
+            type="text"
+            id="inp-barcode"
+            placeholder="Scan atau ketik barcode..."
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            inputmode="text"
+          />
+        </div>
+        <button class="scan-btn" onclick="openScanner()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3"  y="3"  width="5" height="5" rx="1"/>
+            <rect x="16" y="3"  width="5" height="5" rx="1"/>
+            <rect x="3"  y="16" width="5" height="5" rx="1"/>
+            <path d="M21 16h-3v3"/><path d="M21 21h-3"/>
+            <path d="M16 21v-3"/>
+            <path d="M12 3v3"/><path d="M12 9v1"/>
+            <path d="M12 13v3"/><path d="M12 19v2"/>
+            <path d="M3 12h3"/><path d="M9 12h1"/>
+            <path d="M13 12h3"/><path d="M19 12h2"/>
+          </svg>
+          Scan
+        </button>
+      </div>
+
+      <!-- Nama + Qty -->
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label for="inp-name">Nama Barang</label>
+          <input type="text" id="inp-name" placeholder="Nama barang (opsional)" />
+        </div>
+        <div class="form-group">
+          <label for="inp-qty">Qty</label>
+          <input type="number" id="inp-qty" placeholder="0" min="1" value="1" inputmode="numeric" />
+        </div>
+      </div>
+
+      <!-- Tanggal + Keterangan -->
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label for="inp-date">Tanggal</label>
+          <input type="date" id="inp-date" />
+        </div>
+        <div class="form-group">
+          <label for="inp-note">Keterangan</label>
+          <input type="text" id="inp-note" placeholder="Opsional..." />
+        </div>
+      </div>
+
+      <button class="submit-btn in" id="submit-btn" onclick="submitData()">
+        + Tambah Data Masuk
+      </button>
+    </div>
+
+    <!-- ===================================================
+         STATISTIK
+         =================================================== -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total</div>
+        <div class="stat-val" id="stat-total">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Masuk</div>
+        <div class="stat-val in" id="stat-in">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Keluar</div>
+        <div class="stat-val out" id="stat-out">0</div>
+      </div>
+    </div>
+
+    <!-- ===================================================
+         RIWAYAT inputan
+         =================================================== -->
+    <div class="section-header">
+      <span class="section-title">Riwayat inputan</span>
+      <div class="btn-actions">
+        <button class="btn-small" onclick="exportCSV()">Export CSV</button>
+        <button class="btn-small" onclick="clearAll()">Hapus Semua</button>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <button class="filter-btn active" id="f-all" onclick="setFilter('all')">Semua</button>
+      <button class="filter-btn"        id="f-in"  onclick="setFilter('in')">Masuk</button>
+      <button class="filter-btn"        id="f-out" onclick="setFilter('out')">Keluar</button>
+    </div>
+
+    <!-- Tabel — tampil di desktop -->
+    <div id="log-wrap"></div>
+
+  </div><!-- /container -->
+
+  <!-- =====================================================
+       OVERLAY SCANNER (Bottom Sheet)
+       ===================================================== -->
+  <div class="scan-overlay" id="scan-overlay">
+    <div class="scan-modal">
+      <div class="scan-handle"></div>
+      <div class="scan-modal-title">Scan Barcode</div>
+
+      <div class="scan-viewport">
+        <video id="scan-video" autoplay muted playsinline></video>
+        <div class="scan-line"></div>
+      </div>
+
+      <div class="scan-hint" id="scan-hint">Arahkan kamera ke barcode...</div>
+
+      <div class="scan-divider">— atau ketik manual —</div>
+
+      <input
+        type="text"
+        id="scan-manual"
+        placeholder="Ketik barcode lalu tekan Enter"
+        onkeydown="if (event.key === 'Enter') manualBarcode()"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        inputmode="text"
+      />
+
+      <button class="scan-close-btn" onclick="closeScanner()">Tutup Scanner</button>
+    </div>
+  </div>
+
+  <!-- Toast notifikasi -->
+  <div class="toast" id="toast"></div>
+
+
+  <!-- =====================================================
+       JAVASCRIPT
+       ===================================================== -->
+  <script>
+
+    /* --------------------------------------------------
+       KONSTANTA & STATE
+    -------------------------------------------------- */
+    const STORE_KEY   = 'inv_data_v1';
+
+    let currentMode   = 'in';
+    let currentFilter = 'all';
+    let codeReader    = null;
+    let isScanning    = false;
+
+
+    /* --------------------------------------------------
+       DATABASE — localStorage
+    -------------------------------------------------- */
+    function getDB() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
+      catch { return []; }
+    }
+
+    function saveDB(data) {
+      localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    }
+
+
+    /* --------------------------------------------------
+       MODE SWITCH
+    -------------------------------------------------- */
+    function setMode(mode) {
+      currentMode = mode;
+
+      document.getElementById('btn-in').className  = 'sw-btn' + (mode === 'in'  ? ' active-in'  : '');
+      document.getElementById('btn-out').className = 'sw-btn' + (mode === 'out' ? ' active-out' : '');
+
+      const badge = document.getElementById('mode-badge');
+      badge.className = 'mode-badge ' + mode;
+      badge.innerHTML = `<span class="dot ${mode}"></span> Mode: Data ${mode === 'in' ? 'Masuk' : 'Keluar'}`;
+
+      const btn = document.getElementById('submit-btn');
+      btn.className   = 'submit-btn ' + mode;
+      btn.textContent = mode === 'in' ? '+ Tambah Data Masuk' : '- Tambah Data Keluar';
+    }
+
+
+    /* --------------------------------------------------
+       FILTER
+    -------------------------------------------------- */
+    function setFilter(f) {
+      currentFilter = f;
+      ['all', 'in', 'out'].forEach(x => {
+        document.getElementById('f-' + x).className = 'filter-btn' + (x === f ? ' active' : '');
+      });
+      renderLog();
+    }
+
+
+    /* --------------------------------------------------
+       SUBMIT DATA
+    -------------------------------------------------- */
+    function submitData() {
+      const barcode = document.getElementById('inp-barcode').value.trim();
+      const name    = document.getElementById('inp-name').value.trim();
+      const qty     = parseInt(document.getElementById('inp-qty').value) || 0;
+      const date    = document.getElementById('inp-date').value;
+      const note    = document.getElementById('inp-note').value.trim();
+
+      if (!barcode) { showToast('Barcode wajib diisi!'); return; }
+      if (qty < 1)  { showToast('Qty minimal 1!');       return; }
+
+      const record = {
+        id      : Date.now(),
+        mode    : currentMode,
+        barcode : barcode,
+        name    : name || barcode,
+        qty     : qty,
+        date    : date || new Date().toISOString().slice(0, 10),
+        note    : note,
+        time    : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      const db = getDB();
+      db.unshift(record);
+      saveDB(db);
+
+      // Reset form
+      document.getElementById('inp-barcode').value = '';
+      document.getElementById('inp-name').value    = '';
+      document.getElementById('inp-qty').value     = '1';
+      document.getElementById('inp-note').value    = '';
+
+      renderLog();
+      updateStats();
+      showToast(currentMode === 'in' ? 'Data masuk ditambahkan!' : 'Data keluar ditambahkan!');
+
+      // Kembali fokus ke barcode (berguna saat scan berulang)
+      document.getElementById('inp-barcode').focus();
+    }
+
+
+    /* --------------------------------------------------
+       RENDER LOG — auto pilih tabel atau kartu
+    -------------------------------------------------- */
+    function renderLog() {
+      const db       = getDB();
+      const filtered = currentFilter === 'all' ? db : db.filter(r => r.mode === currentFilter);
+      const wrap     = document.getElementById('log-wrap');
+
+      if (!filtered.length) {
+        wrap.innerHTML = '<div class="empty">Belum ada inputan</div>';
+        return;
+      }
+
+      const isMobile = window.innerWidth <= 480;
+      wrap.innerHTML  = isMobile ? renderCards(filtered) : renderTable(filtered);
+    }
+
+    /* Tabel — desktop */
+    function renderTable(data) {
+      let html = `
+        <div class="table-wrap table-desktop">
+          <table>
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Waktu</th>
+                <th>Barcode</th>
+                <th>Nama Barang</th>
+                <th style="text-align:right">Qty</th>
+                <th>Tipe</th>
+                <th class="col-hide">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      data.forEach(r => {
+        html += `
+          <tr>
+            <td>${r.date}</td>
+            <td>${r.time || '-'}</td>
+            <td class="td-barcode">${r.barcode}</td>
+            <td>${r.name}</td>
+            <td class="td-qty">${r.qty}</td>
+            <td><span class="tag ${r.mode}">${r.mode === 'in' ? 'Masuk' : 'Keluar'}</span></td>
+            <td class="td-note col-hide">${r.note || '-'}</td>
+          </tr>
+        `;
+      });
+
+      return html + '</tbody></table></div>';
+    }
+
+    /* Kartu — mobile */
+    function renderCards(data) {
+      let html = '<div class="table-wrap card-list">';
+
+      data.forEach(r => {
+        html += `
+          <div class="record-card">
+            <div class="rc-top">
+              <div class="rc-name">${r.name}</div>
+              <div class="rc-qty">×${r.qty}</div>
+            </div>
+            <div class="rc-meta">
+              <span class="tag ${r.mode}">${r.mode === 'in' ? 'Masuk' : 'Keluar'}</span>
+              <span class="rc-barcode">${r.barcode}</span>
+              <span class="rc-date">${r.date} ${r.time || ''}</span>
+              ${r.note ? `<span class="rc-note">${r.note}</span>` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      return html + '</div>';
+    }
+
+
+    /* --------------------------------------------------
+       UPDATE STATISTIK
+    -------------------------------------------------- */
+    function updateStats() {
+      const db = getDB();
+      document.getElementById('stat-total').textContent = db.length;
+      document.getElementById('stat-in').textContent    = db.filter(r => r.mode === 'in').length;
+      document.getElementById('stat-out').textContent   = db.filter(r => r.mode === 'out').length;
+    }
+
+
+    /* --------------------------------------------------
+       HAPUS SEMUA
+    -------------------------------------------------- */
+    function clearAll() {
+      if (!confirm('Yakin ingin menghapus semua data riwayat?')) return;
+      saveDB([]);
+      renderLog();
+      updateStats();
+      showToast('Semua data berhasil dihapus');
+    }
+
+
+    /* --------------------------------------------------
+       EXPORT CSV
+    -------------------------------------------------- */
+    function exportCSV() {
+      const db = getDB();
+      if (!db.length) { showToast('Tidak ada data untuk diexport'); return; }
+
+      const header = 'Tanggal,Waktu,Barcode,Nama Barang,Qty,Tipe,Keterangan';
+      const rows   = db.map(r =>
+        `${r.date},${r.time || ''},"${r.barcode}","${r.name}",${r.qty},` +
+        `${r.mode === 'in' ? 'Masuk' : 'Keluar'},"${r.note || ''}"`
+      );
+
+      const csv  = [header, ...rows].join('\n');
+      const blob = new Blob(['\uFEFF' + csv, { type: 'text/csv;charset=utf-8;' }]);
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'inventory_' + new Date().toISOString().slice(0, 10) + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+
+    /* --------------------------------------------------
+       TOAST
+    -------------------------------------------------- */
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+
+    /* --------------------------------------------------
+       SCANNER — buka
+    -------------------------------------------------- */
+    async function openScanner() {
+      document.getElementById('scan-overlay').classList.add('open');
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+
+        const video   = document.getElementById('scan-video');
+        video.srcObject = stream;
+
+        if (typeof ZXing !== 'undefined') {
+          codeReader = new ZXing.BrowserMultiFormatReader();
+          isScanning = true;
+
+          codeReader.decodeFromVideoDevice(null, 'scan-video', (result, err) => {
+            if (result && isScanning) {
+              isScanning = false;
+
+              // Vibrate pada HP yang support
+              if (navigator.vibrate) navigator.vibrate(100);
+
+              document.getElementById('inp-barcode').value = result.getText();
+              closeScanner();
+              showToast('Barcode berhasil discan!');
+            }
+          });
+        } else {
+          document.getElementById('scan-hint').textContent =
+            'Library scanner tidak tersedia. Gunakan input manual.';
+        }
+
+      } catch (err) {
+        document.getElementById('scan-hint').textContent =
+          'Kamera tidak dapat diakses. Gunakan input manual.';
+        console.warn('Camera error:', err);
+      }
+    }
+
+
+    /* --------------------------------------------------
+       SCANNER — tutup
+    -------------------------------------------------- */
+    function closeScanner() {
+      isScanning = false;
+
+      if (codeReader) {
+        try { codeReader.reset(); } catch (e) {}
+        codeReader = null;
+      }
+
+      const video = document.getElementById('scan-video');
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(t => t.stop());
+        video.srcObject = null;
+      }
+
+      document.getElementById('scan-overlay').classList.remove('open');
+      document.getElementById('scan-hint').textContent = 'Arahkan kamera ke barcode...';
+    }
+
+
+    /* --------------------------------------------------
+       SCANNER — input manual
+    -------------------------------------------------- */
+    function manualBarcode() {
+      const val = document.getElementById('scan-manual').value.trim();
+      if (!val) return;
+      document.getElementById('inp-barcode').value = val;
+      document.getElementById('scan-manual').value = '';
+      closeScanner();
+      showToast('Barcode dimasukkan!');
+    }
+
+
+    /* --------------------------------------------------
+       JAM REAL-TIME
+    -------------------------------------------------- */
+    function updateClock() {
+      document.getElementById('clock').textContent =
+        new Date().toLocaleTimeString('id-ID');
+    }
+
+
+    /* --------------------------------------------------
+       RE-RENDER saat resize (tabel ↔ kartu)
+    -------------------------------------------------- */
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(renderLog, 200);
+    });
+
+
+    /* --------------------------------------------------
+       KEYBOARD SHORTCUT
+    -------------------------------------------------- */
+    document.getElementById('inp-barcode').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('inp-qty').focus();
+    });
+
+    document.getElementById('inp-qty').addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitData();
+    });
+
+
+    /* --------------------------------------------------
+       INISIALISASI
+    -------------------------------------------------- */
+    (function init() {
+      document.getElementById('inp-date').value =
+        new Date().toISOString().slice(0, 10);
+
+      updateClock();
+      setInterval(updateClock, 1000);
+      renderLog();
+      updateStats();
+    })();
+
+  </script>
+</body>
+</html>

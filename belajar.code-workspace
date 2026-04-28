@@ -1,0 +1,34 @@
+{
+	"folders": [
+		{
+			"path": "../../Projek (belajar)/website/belajar"
+		},
+		{
+			"path": "../../Projek (belajar)/website/website laura/2.halaman pilihan"
+		},
+		{
+			"path": "../../Projek (belajar)/website/website laura/1.form login dan registrasi-biru"
+		},
+		{
+			"path": "../../Projek (belajar)/website/website laura/3. input data master"
+		},
+		{
+			"path": "../../Projek (belajar)/website/website laura/4.input pembelian"
+		},
+		{
+			"path": "../../xampp/htdocs/toko"
+		},
+		{
+			"path": "C:/Users/Asus/Downloads/startbootstrap-agency-gh-pages/startbootstrap-agency-gh-pages"
+		},
+		{
+			"path": "C:/Users/Asus/Downloads/startbootstrap-sb-admin-gh-pages"
+		},
+		{
+			"path": "../../xampp/htdocs/pos-kasir-php-master"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "startbootstrap-agency-gh-pages"
+	}
+}
