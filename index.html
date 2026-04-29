@@ -8,6 +8,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#1a1a1a" />
   <title>Inventory</title>
+
+  <!-- =====================================================
+       LIBRARY BARCODE SCANNER
+       Quagga2  : akurat untuk barcode batang (EAN-13, EAN-8,
+                  Code128, UPC-A, UPC-E, Code39, ITF, dll)
+       ZXing    : fallback untuk QR Code
+       ===================================================== -->
+  <script src="https://unpkg.com/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
   <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
 
   <style>
@@ -38,33 +46,25 @@
       --radius-lg   : 10px;
       --font-main   : system-ui, -apple-system, sans-serif;
       --font-mono   : 'Courier New', monospace;
-
-      /* Touch target minimum */
       --touch-min   : 44px;
     }
 
-    html {
-      /* Mencegah zoom saat focus input di iOS */
-      font-size: 16px;
-    }
+    html { font-size: 16px; }
 
     body {
-      font-family      : var(--font-main);
-      background       : var(--c-bg-2);
-      color            : var(--c-text);
-      min-height       : 100vh;
-      min-height       : 100dvh; /* dynamic viewport height untuk mobile */
-      padding          : 1rem;
-      padding-bottom   : 2rem;
+      font-family    : var(--font-main);
+      background     : var(--c-bg-2);
+      color          : var(--c-text);
+      min-height     : 100vh;
+      min-height     : 100dvh;
+      padding        : 1rem;
+      padding-bottom : 2rem;
     }
 
     /* =====================================================
        LAYOUT UTAMA
        ===================================================== */
-    .container {
-      max-width : 760px;
-      margin    : 0 auto;
-    }
+    .container { max-width: 760px; margin: 0 auto; }
 
     /* =====================================================
        HEADER
@@ -85,16 +85,9 @@
       text-transform : uppercase;
     }
 
-    .logo span {
-      font-weight : 400;
-      color       : var(--c-text-2);
-    }
+    .logo span { font-weight: 400; color: var(--c-text-2); }
 
-    .header-right {
-      display     : flex;
-      align-items : center;
-      gap         : 10px;
-    }
+    .header-right { display: flex; align-items: center; gap: 10px; }
 
     .clock {
       font-size            : 12px;
@@ -104,7 +97,7 @@
     }
 
     /* =====================================================
-       SWITCH MODE — MASUK / KELUAR
+       SWITCH MODE
        ===================================================== */
     .switch-row {
       display       : flex;
@@ -116,7 +109,7 @@
 
     .sw-btn {
       flex           : 1;
-      padding        : 12px 0;          /* lebih tinggi untuk touch */
+      padding        : 12px 0;
       font-size      : 13px;
       font-weight    : 500;
       letter-spacing : 0.06em;
@@ -151,13 +144,7 @@
     .mode-badge.in  { background: var(--c-in-bg);  color: var(--c-in);  }
     .mode-badge.out { background: var(--c-out-bg); color: var(--c-out); }
 
-    .dot {
-      width         : 6px;
-      height        : 6px;
-      border-radius : 50%;
-      flex-shrink   : 0;
-    }
-
+    .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     .dot.in  { background: var(--c-in);  }
     .dot.out { background: var(--c-out); }
 
@@ -187,11 +174,7 @@
       margin-bottom         : 10px;
     }
 
-    .form-group {
-      display        : flex;
-      flex-direction : column;
-      gap            : 5px;
-    }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
 
     label {
       font-size      : 11px;
@@ -201,57 +184,49 @@
       color          : var(--c-text-2);
     }
 
-    /* Input — font-size 16px WAJIB agar iOS tidak auto-zoom */
     input[type="text"],
     input[type="number"],
     input[type="date"] {
-      width          : 100%;
-      padding        : 10px 12px;
-      font-size      : 16px;            /* PENTING: mencegah zoom iOS */
-      font-family    : var(--font-mono);
-      border         : 1px solid var(--c-border);
-      border-radius  : var(--radius-sm);
-      background     : var(--c-bg);
-      color          : var(--c-text);
-      transition     : border-color 0.15s;
-      min-height     : var(--touch-min);
-      -webkit-appearance: none;
-      appearance     : none;
+      width              : 100%;
+      padding            : 10px 12px;
+      font-size          : 16px;
+      font-family        : var(--font-mono);
+      border             : 1px solid var(--c-border);
+      border-radius      : var(--radius-sm);
+      background         : var(--c-bg);
+      color              : var(--c-text);
+      transition         : border-color 0.15s;
+      min-height         : var(--touch-min);
+      -webkit-appearance : none;
+      appearance         : none;
     }
 
-    input:focus {
-      outline      : none;
-      border-color : var(--c-accent);
-    }
+    input:focus { outline: none; border-color: var(--c-accent); }
 
     /* =====================================================
        TOMBOL SCAN
        ===================================================== */
     .scan-btn {
-      display        : flex;
-      align-items    : center;
-      justify-content: center;
-      gap            : 6px;
-      padding        : 0 14px;
-      height         : var(--touch-min);
-      background     : var(--c-accent);
-      color          : #fff;
-      border         : none;
-      border-radius  : var(--radius-sm);
-      cursor         : pointer;
-      font-size      : 13px;
-      font-weight    : 500;
-      white-space    : nowrap;
-      transition     : opacity 0.15s;
-      flex-shrink    : 0;
+      display         : flex;
+      align-items     : center;
+      justify-content : center;
+      gap             : 6px;
+      padding         : 0 14px;
+      height          : var(--touch-min);
+      background      : var(--c-accent);
+      color           : #fff;
+      border          : none;
+      border-radius   : var(--radius-sm);
+      cursor          : pointer;
+      font-size       : 13px;
+      font-weight     : 500;
+      white-space     : nowrap;
+      transition      : opacity 0.15s;
+      flex-shrink     : 0;
     }
 
     .scan-btn:active { opacity: 0.7; }
-
-    .scan-btn svg {
-      width  : 16px;
-      height : 16px;
-    }
+    .scan-btn svg { width: 16px; height: 16px; }
 
     /* =====================================================
        TOMBOL SUBMIT
@@ -273,7 +248,6 @@
 
     .submit-btn.in  { background: var(--c-in);  color: #fff; }
     .submit-btn.out { background: var(--c-out); color: #fff; }
-
     .submit-btn:active { transform: scale(0.98); opacity: 0.88; }
 
     /* =====================================================
@@ -332,21 +306,18 @@
       color          : var(--c-text-2);
     }
 
-    .btn-actions {
-      display : flex;
-      gap     : 6px;
-    }
+    .btn-actions { display: flex; gap: 6px; }
 
     .btn-small {
-      font-size      : 10px;
-      color          : var(--c-text-2);
-      background     : none;
-      border         : 1px solid var(--c-border);
-      border-radius  : var(--radius-sm);
-      padding        : 5px 10px;
-      cursor         : pointer;
-      transition     : background 0.15s;
-      min-height     : 30px;
+      font-size   : 10px;
+      color       : var(--c-text-2);
+      background  : none;
+      border      : 1px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      padding     : 5px 10px;
+      cursor      : pointer;
+      transition  : background 0.15s;
+      min-height  : 30px;
     }
 
     .btn-small:active { background: var(--c-bg-3); }
@@ -354,11 +325,7 @@
     /* =====================================================
        FILTER
        ===================================================== */
-    .filter-row {
-      display       : flex;
-      gap           : 6px;
-      margin-bottom : 8px;
-    }
+    .filter-row { display: flex; gap: 6px; margin-bottom: 8px; }
 
     .filter-btn {
       padding        : 6px 12px;
@@ -382,7 +349,7 @@
     }
 
     /* =====================================================
-       TABEL RIWAYAT — Desktop
+       TABEL RIWAYAT
        ===================================================== */
     .table-wrap {
       background    : var(--c-bg);
@@ -391,11 +358,7 @@
       overflow      : hidden;
     }
 
-    table {
-      width           : 100%;
-      border-collapse : collapse;
-      font-size       : 13px;
-    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
     thead th {
       font-size      : 10px;
@@ -410,10 +373,10 @@
     }
 
     tbody td {
-      padding       : 9px 10px;
-      border-bottom : 0.5px solid var(--c-border);
-      color         : var(--c-text);
-      vertical-align: middle;
+      padding        : 9px 10px;
+      border-bottom  : 0.5px solid var(--c-border);
+      color          : var(--c-text);
+      vertical-align : middle;
     }
 
     tbody tr:last-child td { border-bottom: none; }
@@ -423,9 +386,10 @@
     .td-note    { color: var(--c-text-2); font-size: 12px; }
 
     /* =====================================================
-       KARTU MOBILE — tampil di HP, sembunyikan tabel
+       KARTU MOBILE
        ===================================================== */
-    .card-list   { display: none; }
+    .card-list { display: none; }
+
     .record-card {
       background    : var(--c-bg);
       border-bottom : 1px solid var(--c-border);
@@ -441,43 +405,12 @@
       margin-bottom   : 6px;
     }
 
-    .rc-name {
-      font-size   : 14px;
-      font-weight : 500;
-      color       : var(--c-text);
-      flex        : 1;
-      margin-right: 8px;
-    }
-
-    .rc-qty {
-      font-size   : 16px;
-      font-weight : 600;
-      color       : var(--c-text);
-    }
-
-    .rc-meta {
-      display     : flex;
-      align-items : center;
-      gap         : 8px;
-      flex-wrap   : wrap;
-    }
-
-    .rc-barcode {
-      font-family : var(--font-mono);
-      font-size   : 11px;
-      color       : var(--c-text-2);
-    }
-
-    .rc-date {
-      font-size : 11px;
-      color     : var(--c-text-2);
-    }
-
-    .rc-note {
-      font-size : 11px;
-      color     : var(--c-text-2);
-      font-style: italic;
-    }
+    .rc-name  { font-size: 14px; font-weight: 500; color: var(--c-text); flex: 1; margin-right: 8px; }
+    .rc-qty   { font-size: 16px; font-weight: 600; color: var(--c-text); }
+    .rc-meta  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .rc-barcode { font-family: var(--font-mono); font-size: 11px; color: var(--c-text-2); }
+    .rc-date  { font-size: 11px; color: var(--c-text-2); }
+    .rc-note  { font-size: 11px; color: var(--c-text-2); font-style: italic; }
 
     /* =====================================================
        BADGE TIPE
@@ -499,15 +432,10 @@
     /* =====================================================
        EMPTY STATE
        ===================================================== */
-    .empty {
-      text-align : center;
-      padding    : 2.5rem 1rem;
-      color      : var(--c-text-2);
-      font-size  : 13px;
-    }
+    .empty { text-align: center; padding: 2.5rem 1rem; color: var(--c-text-2); font-size: 13px; }
 
     /* =====================================================
-       TOAST NOTIFIKASI
+       TOAST
        ===================================================== */
     .toast {
       position       : fixed;
@@ -529,21 +457,18 @@
       text-align     : center;
     }
 
-    .toast.show {
-      opacity   : 1;
-      transform : translateX(-50%) translateY(0);
-    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* =====================================================
-       OVERLAY SCANNER
+       OVERLAY SCANNER — dioptimasi untuk barcode batang
        ===================================================== */
     .scan-overlay {
       display         : none;
       position        : fixed;
       inset           : 0;
-      background      : rgba(0, 0, 0, 0.82);
+      background      : rgba(0, 0, 0, 0.88);
       z-index         : 100;
-      align-items     : flex-end;   /* slide-up dari bawah di mobile */
+      align-items     : flex-end;
       justify-content : center;
     }
 
@@ -554,14 +479,13 @@
       border-radius : var(--radius-lg) var(--radius-lg) 0 0;
       padding       : 1.25rem;
       width         : 100%;
-      max-width     : 480px;
-      max-height    : 92vh;
-      max-height    : 92dvh;
+      max-width     : 520px;
+      max-height    : 95vh;
+      max-height    : 95dvh;
       overflow-y    : auto;
       text-align    : center;
     }
 
-    /* Handle bar — visual khas bottom sheet mobile */
     .scan-handle {
       width         : 36px;
       height        : 4px;
@@ -575,133 +499,244 @@
       font-weight    : 500;
       text-transform : uppercase;
       letter-spacing : 0.08em;
-      margin-bottom  : 12px;
+      margin-bottom  : 4px;
     }
 
+    /* Info tipe barcode yang terdeteksi */
+    .scan-detected {
+      font-size     : 11px;
+      color         : var(--c-in);
+      font-weight   : 500;
+      margin-bottom : 8px;
+      min-height    : 16px;
+      letter-spacing: 0.05em;
+    }
+
+    /* =====================================================
+       VIEWPORT KAMERA — landscape untuk barcode batang
+       ===================================================== */
     .scan-viewport {
       position        : relative;
       width           : 100%;
-      aspect-ratio    : 4 / 3;
-      background      : #111;
+      /* Landscape ratio lebih baik untuk barcode batang horizontal */
+      aspect-ratio    : 16 / 9;
+      background      : #000;
       border-radius   : var(--radius-md);
       overflow        : hidden;
-      margin-bottom   : 12px;
-      display         : flex;
-      align-items     : center;
-      justify-content : center;
+      margin-bottom   : 10px;
     }
 
-    .scan-viewport video {
+    /* Video Quagga2 dirender via <video> internal */
+    #quagga-viewport {
+      width    : 100%;
+      height   : 100%;
+      position : relative;
+    }
+
+    #quagga-viewport video {
       width      : 100%;
       height     : 100%;
       object-fit : cover;
       display    : block;
     }
 
-    .scan-line {
+    /* Canvas overlay Quagga2 — tempat garis deteksi digambar */
+    #quagga-viewport canvas {
+      position : absolute;
+      top      : 0;
+      left     : 0;
+      width    : 100% !important;
+      height   : 100% !important;
+    }
+
+    /* =====================================================
+       ROI — Region of Interest (kotak fokus scan)
+       Area tengah yang diprioritaskan untuk pembacaan
+       ===================================================== */
+    .scan-roi {
+      position      : absolute;
+      top           : 50%;
+      left          : 50%;
+      transform     : translate(-50%, -50%);
+      width         : 80%;
+      height        : 35%;
+      border        : 2px solid rgba(34, 197, 94, 0.8);
+      border-radius : 4px;
+      pointer-events: none;
+      z-index       : 10;
+    }
+
+    /* Sudut ROI yang lebih tebal untuk panduan visual */
+    .scan-roi::before,
+    .scan-roi::after {
+      content       : '';
+      position      : absolute;
+      width         : 20px;
+      height        : 20px;
+      border-color  : #22c55e;
+      border-style  : solid;
+    }
+
+    .scan-roi::before {
+      top           : -2px;
+      left          : -2px;
+      border-width  : 3px 0 0 3px;
+      border-radius : 3px 0 0 0;
+    }
+
+    .scan-roi::after {
+      bottom        : -2px;
+      right         : -2px;
+      border-width  : 0 3px 3px 0;
+      border-radius : 0 0 3px 0;
+    }
+
+    /* Garis scan horizontal animasi */
+    .scan-line-h {
       position   : absolute;
-      width      : 70%;
-      height     : 2px;
-      background : #22c55e;
-      left       : 15%;
-      animation  : scanline 1.5s linear infinite;
+      top        : 50%;
+      left       : 5%;
+      width      : 90%;
+      height     : 1.5px;
+      background : rgba(34, 197, 94, 0.7);
+      animation  : scan-h 1.8s ease-in-out infinite;
     }
 
-    @keyframes scanline {
-      0%   { top: 15%; }
-      50%  { top: 80%; }
-      100% { top: 15%; }
+    @keyframes scan-h {
+      0%   { top: 20%; opacity: 0.4; }
+      50%  { top: 80%; opacity: 1;   }
+      100% { top: 20%; opacity: 0.4; }
     }
 
-    .scan-hint {
-      font-size     : 12px;
-      color         : var(--c-text-2);
+    /* =====================================================
+       STATUS SCANNER
+       ===================================================== */
+    .scan-status {
+      display         : flex;
+      align-items     : center;
+      justify-content : center;
+      gap             : 6px;
+      font-size       : 12px;
+      color           : var(--c-text-2);
+      margin-bottom   : 10px;
+    }
+
+    .scan-status-dot {
+      width         : 6px;
+      height        : 6px;
+      border-radius : 50%;
+      background    : var(--c-border);
+      transition    : background 0.3s;
+    }
+
+    .scan-status-dot.active  { background: var(--c-in); animation: pulse 1s infinite; }
+    .scan-status-dot.success { background: var(--c-in); }
+    .scan-status-dot.error   { background: var(--c-out); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    /* =====================================================
+       TAB SWITCH — Scan / Manual
+       ===================================================== */
+    .scan-tabs {
+      display       : flex;
+      border        : 1px solid var(--c-border);
+      border-radius : var(--radius-sm);
+      overflow      : hidden;
       margin-bottom : 12px;
     }
 
-    .scan-divider {
-      font-size      : 11px;
-      color          : #aaa;
+    .scan-tab {
+      flex           : 1;
+      padding        : 8px 0;
+      font-size      : 12px;
+      font-weight    : 500;
+      letter-spacing : 0.05em;
       text-transform : uppercase;
-      letter-spacing : 0.06em;
-      margin         : 10px 0;
+      border         : none;
+      cursor         : pointer;
+      background     : transparent;
+      color          : var(--c-text-2);
+      transition     : background 0.15s, color 0.15s;
     }
+
+    .scan-tab.active { background: var(--c-accent); color: #fff; }
+
+    /* =====================================================
+       PANEL MANUAL INPUT
+       ===================================================== */
+    .manual-panel { display: none; padding: 4px 0 8px; }
+    .manual-panel.show { display: block; }
 
     .scan-modal input[type="text"] {
-      margin-bottom : 10px;
-      font-family   : var(--font-mono);
-      text-align    : center;
+      margin-bottom  : 10px;
+      font-family    : var(--font-mono);
+      text-align     : center;
+      letter-spacing : 0.1em;
     }
 
+    /* =====================================================
+       TOMBOL CLOSE SCANNER
+       ===================================================== */
     .scan-close-btn {
-      width          : 100%;
-      padding        : 12px;
-      background     : var(--c-accent);
-      color          : #fff;
-      border         : none;
-      border-radius  : var(--radius-sm);
-      cursor         : pointer;
-      font-size      : 14px;
-      font-weight    : 500;
-      min-height     : var(--touch-min);
+      width         : 100%;
+      padding       : 12px;
+      background    : var(--c-accent);
+      color         : #fff;
+      border        : none;
+      border-radius : var(--radius-sm);
+      cursor        : pointer;
+      font-size     : 14px;
+      font-weight   : 500;
+      min-height    : var(--touch-min);
+      transition    : opacity 0.15s;
     }
 
     .scan-close-btn:active { opacity: 0.85; }
 
     /* =====================================================
-       RESPONSIVE — TABLET (max 600px)
+       TIPS SCAN
+       ===================================================== */
+    .scan-tips {
+      font-size     : 11px;
+      color         : var(--c-text-2);
+      margin-bottom : 10px;
+      line-height   : 1.5;
+    }
+
+    /* =====================================================
+       RESPONSIVE — TABLET
        ===================================================== */
     @media (max-width: 600px) {
-
       body { padding: 0.75rem; padding-bottom: 2rem; }
-
-      /* Statistik — 3 kolom tetap tapi lebih compact */
       .stats-row { gap: 6px; }
-
       .stat-card { padding: 8px 10px; }
-
       .stat-label { font-size: 9px; }
-
       .stat-val { font-size: 18px; }
-
-      /* Sembunyikan keterangan di tabel */
       .col-hide { display: none; }
     }
 
     /* =====================================================
-       RESPONSIVE — MOBILE (max 480px)
+       RESPONSIVE — MOBILE
        ===================================================== */
     @media (max-width: 480px) {
-
-      /* Form grid — 1 kolom di HP */
       .form-grid-2 { grid-template-columns: 1fr; }
-
-      /* Ganti tabel dengan kartu */
       .table-desktop { display: none; }
-      .card-list      { display: block; }
-
-      /* Statistik — 3 kolom tetap dengan font lebih kecil */
-      .stat-val   { font-size: 16px; }
+      .card-list { display: block; }
+      .stat-val { font-size: 16px; }
       .stat-label { font-size: 8px; }
-
-      /* Scanner modal full bottom sheet */
-      .scan-modal {
-        border-radius: 16px 16px 0 0;
-        padding      : 1rem;
-      }
+      .scan-modal { border-radius: 16px 16px 0 0; padding: 1rem; }
     }
 
     /* =====================================================
-       SAFE AREA — notch iPhone / Android
+       SAFE AREA
        ===================================================== */
     @supports (padding: env(safe-area-inset-bottom)) {
-      body {
-        padding-bottom : calc(2rem + env(safe-area-inset-bottom));
-      }
-
-      .toast {
-        bottom : calc(24px + env(safe-area-inset-bottom));
-      }
+      body { padding-bottom: calc(2rem + env(safe-area-inset-bottom)); }
+      .toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
     }
   </style>
 </head>
@@ -709,9 +744,7 @@
 <body>
   <div class="container">
 
-    <!-- ===================================================
-         HEADER
-         =================================================== -->
+    <!-- HEADER -->
     <header class="header">
       <div class="logo">Inventory <span>Lottemart</span></div>
       <div class="header-right">
@@ -719,9 +752,7 @@
       </div>
     </header>
 
-    <!-- ===================================================
-         SWITCH MODE
-         =================================================== -->
+    <!-- SWITCH MODE -->
     <div class="switch-row">
       <button class="sw-btn active-in" id="btn-in"  onclick="setMode('in')">▲ Data Masuk</button>
       <button class="sw-btn"           id="btn-out" onclick="setMode('out')">▼ Data Keluar</button>
@@ -731,12 +762,9 @@
       <span class="dot in"></span> Mode: Data Masuk
     </div>
 
-    <!-- ===================================================
-         FORM INPUT
-         =================================================== -->
+    <!-- FORM INPUT -->
     <div class="form-card">
 
-      <!-- Barcode + tombol scan -->
       <div class="form-row">
         <div class="form-group">
           <label for="inp-barcode">Barcode / Kode Barang</label>
@@ -767,7 +795,6 @@
         </button>
       </div>
 
-      <!-- Nama + Qty -->
       <div class="form-grid-2">
         <div class="form-group">
           <label for="inp-name">Nama Barang</label>
@@ -779,7 +806,6 @@
         </div>
       </div>
 
-      <!-- Tanggal + Keterangan -->
       <div class="form-grid-2">
         <div class="form-group">
           <label for="inp-date">Tanggal</label>
@@ -796,9 +822,7 @@
       </button>
     </div>
 
-    <!-- ===================================================
-         STATISTIK
-         =================================================== -->
+    <!-- STATISTIK -->
     <div class="stats-row">
       <div class="stat-card">
         <div class="stat-label">Total</div>
@@ -814,11 +838,9 @@
       </div>
     </div>
 
-    <!-- ===================================================
-         RIWAYAT 
-         =================================================== -->
+    <!-- RIWAYAT -->
     <div class="section-header">
-      <span class="section-title">Riwayat inputan</span>
+      <span class="section-title">Riwayat Inputan</span>
       <div class="btn-actions">
         <button class="btn-small" onclick="exportCSV()">Export CSV</button>
         <button class="btn-small" onclick="clearAll()">Hapus Semua</button>
@@ -831,47 +853,67 @@
       <button class="filter-btn"        id="f-out" onclick="setFilter('out')">Keluar</button>
     </div>
 
-    <!-- Tabel — tampil di desktop -->
     <div id="log-wrap"></div>
 
   </div><!-- /container -->
 
   <!-- =====================================================
-       OVERLAY SCANNER (Bottom Sheet)
+       OVERLAY SCANNER
        ===================================================== -->
   <div class="scan-overlay" id="scan-overlay">
     <div class="scan-modal">
       <div class="scan-handle"></div>
       <div class="scan-modal-title">Scan Barcode</div>
+      <div class="scan-detected" id="scan-detected"></div>
 
+      <!-- Viewport kamera -->
       <div class="scan-viewport">
-        <video id="scan-video" autoplay muted playsinline></video>
-        <div class="scan-line"></div>
+        <div id="quagga-viewport">
+          <!-- Quagga2 inject video & canvas ke sini -->
+        </div>
+        <!-- ROI guide box -->
+        <div class="scan-roi">
+          <div class="scan-line-h"></div>
+        </div>
       </div>
 
-      <div class="scan-hint" id="scan-hint">Arahkan kamera ke barcode...</div>
+      <!-- Status -->
+      <div class="scan-status">
+        <div class="scan-status-dot" id="scan-dot"></div>
+        <span id="scan-hint">Memulai kamera...</span>
+      </div>
 
-      <div class="scan-divider">— atau ketik manual —</div>
+      <!-- Tab: Kamera / Manual -->
+      <div class="scan-tabs">
+        <button class="scan-tab active" id="tab-cam"    onclick="switchTab('cam')">Kamera</button>
+        <button class="scan-tab"        id="tab-manual" onclick="switchTab('manual')">Manual</button>
+      </div>
 
-      <input
-        type="text"
-        id="scan-manual"
-        placeholder="Ketik barcode lalu tekan Enter"
-        onkeydown="if (event.key === 'Enter') manualBarcode()"
-        autocomplete="off"
-        autocorrect="off"
-        autocapitalize="off"
-        spellcheck="false"
-        inputmode="text"
-      />
+      <!-- Panel manual -->
+      <div class="manual-panel" id="manual-panel">
+        <input
+          type="text"
+          id="scan-manual"
+          placeholder="Ketik barcode lalu tekan Enter"
+          onkeydown="if (event.key === 'Enter') manualBarcode()"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          inputmode="text"
+        />
+      </div>
+
+      <!-- Tips -->
+      <div class="scan-tips" id="scan-tips">
+        Posisikan barcode di tengah kotak hijau · Jarak ideal 10–20 cm · Pastikan cahaya cukup
+      </div>
 
       <button class="scan-close-btn" onclick="closeScanner()">Tutup Scanner</button>
     </div>
   </div>
 
-  <!-- Toast notifikasi -->
   <div class="toast" id="toast"></div>
-
 
   <!-- =====================================================
        JAVASCRIPT
@@ -885,9 +927,13 @@
 
     let currentMode   = 'in';
     let currentFilter = 'all';
-    let codeReader    = null;
     let isScanning    = false;
+    let quaggaActive  = false;
 
+    /* Buffer hasil scan — hindari duplikat deteksi cepat */
+    let lastScanned   = '';
+    let lastScannedAt = 0;
+    const SCAN_DEBOUNCE_MS = 1500;
 
     /* --------------------------------------------------
        DATABASE — localStorage
@@ -901,25 +947,20 @@
       localStorage.setItem(STORE_KEY, JSON.stringify(data));
     }
 
-
     /* --------------------------------------------------
        MODE SWITCH
     -------------------------------------------------- */
     function setMode(mode) {
       currentMode = mode;
-
       document.getElementById('btn-in').className  = 'sw-btn' + (mode === 'in'  ? ' active-in'  : '');
       document.getElementById('btn-out').className = 'sw-btn' + (mode === 'out' ? ' active-out' : '');
-
       const badge = document.getElementById('mode-badge');
       badge.className = 'mode-badge ' + mode;
       badge.innerHTML = `<span class="dot ${mode}"></span> Mode: Data ${mode === 'in' ? 'Masuk' : 'Keluar'}`;
-
       const btn = document.getElementById('submit-btn');
       btn.className   = 'submit-btn ' + mode;
       btn.textContent = mode === 'in' ? '+ Tambah Data Masuk' : '- Tambah Data Keluar';
     }
-
 
     /* --------------------------------------------------
        FILTER
@@ -931,7 +972,6 @@
       });
       renderLog();
     }
-
 
     /* --------------------------------------------------
        SUBMIT DATA
@@ -961,7 +1001,6 @@
       db.unshift(record);
       saveDB(db);
 
-      // Reset form
       document.getElementById('inp-barcode').value = '';
       document.getElementById('inp-name').value    = '';
       document.getElementById('inp-qty').value     = '1';
@@ -970,14 +1009,11 @@
       renderLog();
       updateStats();
       showToast(currentMode === 'in' ? 'Data masuk ditambahkan!' : 'Data keluar ditambahkan!');
-
-      // Kembali fokus ke barcode (berguna saat scan berulang)
       document.getElementById('inp-barcode').focus();
     }
 
-
     /* --------------------------------------------------
-       RENDER LOG — auto pilih tabel atau kartu
+       RENDER LOG
     -------------------------------------------------- */
     function renderLog() {
       const db       = getDB();
@@ -993,46 +1029,35 @@
       wrap.innerHTML  = isMobile ? renderCards(filtered) : renderTable(filtered);
     }
 
-    /* Tabel — desktop */
     function renderTable(data) {
       let html = `
         <div class="table-wrap table-desktop">
           <table>
             <thead>
               <tr>
-                <th>Tanggal</th>
-                <th>Waktu</th>
-                <th>Barcode</th>
-                <th>Nama Barang</th>
-                <th style="text-align:right">Qty</th>
-                <th>Tipe</th>
-                <th class="col-hide">Keterangan</th>
+                <th>Tanggal</th><th>Waktu</th><th>Barcode</th>
+                <th>Nama Barang</th><th style="text-align:right">Qty</th>
+                <th>Tipe</th><th class="col-hide">Keterangan</th>
               </tr>
-            </thead>
-            <tbody>
-      `;
+            </thead><tbody>`;
 
       data.forEach(r => {
-        html += `
-          <tr>
-            <td>${r.date}</td>
-            <td>${r.time || '-'}</td>
-            <td class="td-barcode">${r.barcode}</td>
-            <td>${r.name}</td>
-            <td class="td-qty">${r.qty}</td>
-            <td><span class="tag ${r.mode}">${r.mode === 'in' ? 'Masuk' : 'Keluar'}</span></td>
-            <td class="td-note col-hide">${r.note || '-'}</td>
-          </tr>
-        `;
+        html += `<tr>
+          <td>${r.date}</td>
+          <td>${r.time || '-'}</td>
+          <td class="td-barcode">${r.barcode}</td>
+          <td>${r.name}</td>
+          <td class="td-qty">${r.qty}</td>
+          <td><span class="tag ${r.mode}">${r.mode === 'in' ? 'Masuk' : 'Keluar'}</span></td>
+          <td class="td-note col-hide">${r.note || '-'}</td>
+        </tr>`;
       });
 
       return html + '</tbody></table></div>';
     }
 
-    /* Kartu — mobile */
     function renderCards(data) {
       let html = '<div class="table-wrap card-list">';
-
       data.forEach(r => {
         html += `
           <div class="record-card">
@@ -1046,16 +1071,13 @@
               <span class="rc-date">${r.date} ${r.time || ''}</span>
               ${r.note ? `<span class="rc-note">${r.note}</span>` : ''}
             </div>
-          </div>
-        `;
+          </div>`;
       });
-
       return html + '</div>';
     }
 
-
     /* --------------------------------------------------
-       UPDATE STATISTIK
+       STATISTIK
     -------------------------------------------------- */
     function updateStats() {
       const db = getDB();
@@ -1063,7 +1085,6 @@
       document.getElementById('stat-in').textContent    = db.filter(r => r.mode === 'in').length;
       document.getElementById('stat-out').textContent   = db.filter(r => r.mode === 'out').length;
     }
-
 
     /* --------------------------------------------------
        HAPUS SEMUA
@@ -1075,7 +1096,6 @@
       updateStats();
       showToast('Semua data berhasil dihapus');
     }
-
 
     /* --------------------------------------------------
        EXPORT CSV
@@ -1091,7 +1111,7 @@
       );
 
       const csv  = [header, ...rows].join('\n');
-      const blob = new Blob(['\uFEFF' + csv, { type: 'text/csv;charset=utf-8;' }]);
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
       a.href     = url;
@@ -1099,7 +1119,6 @@
       a.click();
       URL.revokeObjectURL(url);
     }
-
 
     /* --------------------------------------------------
        TOAST
@@ -1111,74 +1130,260 @@
       setTimeout(() => t.classList.remove('show'), 2200);
     }
 
+    /* --------------------------------------------------
+       HELPER — update status UI scanner
+    -------------------------------------------------- */
+    function setScanStatus(state, msg) {
+      const dot  = document.getElementById('scan-dot');
+      const hint = document.getElementById('scan-hint');
+      dot.className  = 'scan-status-dot ' + state;
+      hint.textContent = msg;
+    }
 
     /* --------------------------------------------------
        SCANNER — buka
     -------------------------------------------------- */
-    async function openScanner() {
+    function openScanner() {
+      lastScanned   = '';
+      lastScannedAt = 0;
       document.getElementById('scan-overlay').classList.add('open');
+      document.getElementById('scan-detected').textContent = '';
+      setScanStatus('', 'Memulai kamera...');
+      switchTab('cam');
+      startQuagga();
+    }
 
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
+    /* --------------------------------------------------
+       QUAGGA2 — inisialisasi scanner barcode batang
+       Konfigurasi dioptimasi untuk retail barcode:
+       EAN-13, EAN-8, UPC-A, UPC-E, Code128, Code39
+    -------------------------------------------------- */
+    function startQuagga() {
+      if (typeof Quagga === 'undefined') {
+        setScanStatus('error', 'Library tidak tersedia, gunakan tab Manual');
+        return;
+      }
 
-        const video   = document.getElementById('scan-video');
-        video.srcObject = stream;
+      const viewport = document.getElementById('quagga-viewport');
+      viewport.innerHTML = ''; /* bersihkan instance sebelumnya */
 
-        if (typeof ZXing !== 'undefined') {
-          codeReader = new ZXing.BrowserMultiFormatReader();
-          isScanning = true;
+      Quagga.init({
+        inputStream: {
+          type        : 'LiveStream',
+          target      : viewport,
+          constraints : {
+            /* Resolusi tinggi untuk akurasi barcode batang */
+            width      : { min: 640, ideal: 1280, max: 1920 },
+            height     : { min: 480, ideal: 720,  max: 1080 },
+            /* Kamera belakang — lebih jernih untuk scan */
+            facingMode : 'environment',
+            /* Fokus otomatis kontinu */
+            focusMode  : 'continuous',
+          },
+          /* ROI — hanya proses area tengah frame (lebih cepat & akurat) */
+          area: {
+            top    : '20%',
+            right  : '10%',
+            left   : '10%',
+            bottom : '20%',
+          },
+        },
 
-          codeReader.decodeFromVideoDevice(null, 'scan-video', (result, err) => {
-            if (result && isScanning) {
-              isScanning = false;
+        /* Decoder — format barcode yang didukung */
+        decoder: {
+          readers: [
+            'ean_reader',       /* EAN-13 — paling umum di produk retail */
+            'ean_8_reader',     /* EAN-8  — versi pendek EAN */
+            'upc_reader',       /* UPC-A  — Amerika */
+            'upc_e_reader',     /* UPC-E  — versi kompak UPC */
+            'code_128_reader',  /* Code128 — barcode internal gudang */
+            'code_39_reader',   /* Code39  — barcode lama */
+            'itf_reader',       /* ITF-14  — karton/packaging */
+          ],
+          /* Scan lebih dari 1 barcode per frame untuk konfirmasi */
+          multiple: false,
+        },
 
-              // Vibrate pada HP yang support
-              if (navigator.vibrate) navigator.vibrate(100);
+        /* Lokator — algoritma pencarian barcode di frame */
+        locator: {
+          patchSize    : 'medium',  /* medium = balance kecepatan & akurasi */
+          halfSample   : true,      /* proses setengah resolusi = lebih cepat */
+        },
 
-              document.getElementById('inp-barcode').value = result.getText();
-              closeScanner();
-              showToast('Barcode berhasil discan!');
-            }
-          });
-        } else {
-          document.getElementById('scan-hint').textContent =
-            'Library scanner tidak tersedia. Gunakan input manual.';
+        /* Jumlah worker untuk processing paralel */
+        numOfWorkers : navigator.hardwareConcurrency
+          ? Math.min(navigator.hardwareConcurrency, 4)
+          : 2,
+
+        /* Frekuensi deteksi per detik */
+        frequency : 10,
+
+        /* Debug — matikan di production */
+        debug: false,
+
+        /* Canvas overlay untuk visualisasi deteksi */
+        locate: true,
+
+      }, function(err) {
+        if (err) {
+          console.error('Quagga init error:', err);
+          setScanStatus('error', 'Kamera tidak dapat diakses. Gunakan tab Manual.');
+          return;
         }
 
-      } catch (err) {
-        document.getElementById('scan-hint').textContent =
-          'Kamera tidak dapat diakses. Gunakan input manual.';
-        console.warn('Camera error:', err);
-      }
+        Quagga.start();
+        quaggaActive = true;
+        setScanStatus('active', 'Arahkan barcode ke kotak hijau...');
+      });
+
+      /* --------------------------------------------------
+         EVENT: setiap frame diproses
+         Gambar garis deteksi di canvas overlay
+      -------------------------------------------------- */
+      Quagga.onProcessed(function(result) {
+        const drawingCtx    = Quagga.canvas.ctx.overlay;
+        const drawingCanvas = Quagga.canvas.dom.overlay;
+
+        if (!drawingCtx || !drawingCanvas) return;
+
+        drawingCtx.clearRect(
+          0, 0,
+          parseInt(drawingCanvas.getAttribute('width')),
+          parseInt(drawingCanvas.getAttribute('height'))
+        );
+
+        if (result && result.boxes) {
+          result.boxes
+            .filter(box => box !== result.box)
+            .forEach(box => {
+              Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, {
+                color : 'rgba(255,255,255,0.3)',
+                lineWidth: 1,
+              });
+            });
+        }
+
+        if (result && result.box) {
+          Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, {
+            color     : 'rgba(34,197,94,0.6)',
+            lineWidth : 2,
+          });
+        }
+
+        if (result && result.codeResult && result.codeResult.code) {
+          Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, {
+            color     : '#22c55e',
+            lineWidth : 3,
+          });
+        }
+      });
+
+      /* --------------------------------------------------
+         EVENT: barcode berhasil terdeteksi
+      -------------------------------------------------- */
+      Quagga.onDetected(function(result) {
+        const code   = result.codeResult.code;
+        const format = result.codeResult.format;
+
+        /* Validasi: pastikan barcode tidak kosong */
+        if (!code || code.length < 4) return;
+
+        /* Debounce: hindari duplikat scan dalam 1.5 detik */
+        const now = Date.now();
+        if (code === lastScanned && (now - lastScannedAt) < SCAN_DEBOUNCE_MS) return;
+
+        /* Validasi akurasi: Quagga memberi skor per karakter */
+        const decodedCodes = result.codeResult.decodedCodes;
+        if (decodedCodes && decodedCodes.length > 0) {
+          const errors = decodedCodes
+            .filter(c => c.error !== undefined)
+            .map(c => c.error);
+
+          if (errors.length > 0) {
+            const avgError = errors.reduce((a, b) => a + b, 0) / errors.length;
+            /* Tolak jika error rate terlalu tinggi (threshold 0.25) */
+            if (avgError > 0.25) return;
+          }
+        }
+
+        lastScanned   = code;
+        lastScannedAt = now;
+
+        /* Tampilkan info format barcode */
+        const formatLabel = {
+          'ean_13'  : 'EAN-13',
+          'ean_8'   : 'EAN-8',
+          'upc_a'   : 'UPC-A',
+          'upc_e'   : 'UPC-E',
+          'code_128': 'Code 128',
+          'code_39' : 'Code 39',
+          'itf'     : 'ITF-14',
+        };
+
+        const label = formatLabel[format] || format.toUpperCase();
+        document.getElementById('scan-detected').textContent =
+          `Terdeteksi: ${label}`;
+
+        setScanStatus('success', `Berhasil: ${code}`);
+
+        /* Isi input barcode */
+        document.getElementById('inp-barcode').value = code;
+
+        /* Vibrate di HP */
+        if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+
+        showToast(`Barcode ${label} berhasil discan!`);
+
+        /* Tutup scanner setelah 600ms (beri waktu user lihat feedback) */
+        setTimeout(() => closeScanner(), 600);
+      });
     }
 
-
     /* --------------------------------------------------
-       SCANNER — tutup
+       SCANNER — tutup & bersihkan Quagga
     -------------------------------------------------- */
     function closeScanner() {
+      if (quaggaActive) {
+        try {
+          Quagga.offDetected();
+          Quagga.offProcessed();
+          Quagga.stop();
+        } catch (e) {
+          console.warn('Quagga stop error:', e);
+        }
+        quaggaActive = false;
+      }
+
+      /* Stop semua track kamera yang masih aktif */
+      const videos = document.querySelectorAll('#quagga-viewport video');
+      videos.forEach(v => {
+        if (v.srcObject) {
+          v.srcObject.getTracks().forEach(t => t.stop());
+          v.srcObject = null;
+        }
+      });
+
       isScanning = false;
-
-      if (codeReader) {
-        try { codeReader.reset(); } catch (e) {}
-        codeReader = null;
-      }
-
-      const video = document.getElementById('scan-video');
-      if (video.srcObject) {
-        video.srcObject.getTracks().forEach(t => t.stop());
-        video.srcObject = null;
-      }
-
       document.getElementById('scan-overlay').classList.remove('open');
-      document.getElementById('scan-hint').textContent = 'Arahkan kamera ke barcode...';
+      document.getElementById('scan-detected').textContent = '';
+      setScanStatus('', 'Memulai kamera...');
     }
 
+    /* --------------------------------------------------
+       TAB SWITCH — Kamera / Manual
+    -------------------------------------------------- */
+    function switchTab(tab) {
+      document.getElementById('tab-cam').className    = 'scan-tab' + (tab === 'cam'    ? ' active' : '');
+      document.getElementById('tab-manual').className = 'scan-tab' + (tab === 'manual' ? ' active' : '');
+      document.getElementById('manual-panel').className = 'manual-panel' + (tab === 'manual' ? ' show' : '');
+
+      if (tab === 'manual') {
+        setTimeout(() => document.getElementById('scan-manual').focus(), 100);
+      }
+    }
 
     /* --------------------------------------------------
-       SCANNER — input manual
+       MANUAL INPUT
     -------------------------------------------------- */
     function manualBarcode() {
       const val = document.getElementById('scan-manual').value.trim();
@@ -1189,7 +1394,6 @@
       showToast('Barcode dimasukkan!');
     }
 
-
     /* --------------------------------------------------
        JAM REAL-TIME
     -------------------------------------------------- */
@@ -1198,16 +1402,14 @@
         new Date().toLocaleTimeString('id-ID');
     }
 
-
     /* --------------------------------------------------
-       RE-RENDER saat resize (tabel ↔ kartu)
+       RE-RENDER saat resize
     -------------------------------------------------- */
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(renderLog, 200);
     });
-
 
     /* --------------------------------------------------
        KEYBOARD SHORTCUT
@@ -1220,14 +1422,12 @@
       if (e.key === 'Enter') submitData();
     });
 
-
     /* --------------------------------------------------
        INISIALISASI
     -------------------------------------------------- */
     (function init() {
       document.getElementById('inp-date').value =
         new Date().toISOString().slice(0, 10);
-
       updateClock();
       setInterval(updateClock, 1000);
       renderLog();
