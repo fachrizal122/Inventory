@@ -11,12 +11,11 @@
 
   <!-- =====================================================
        LIBRARY BARCODE SCANNER
-       Quagga2  : akurat untuk barcode batang (EAN-13, EAN-8,
-                  Code128, UPC-A, UPC-E, Code39, ITF, dll)
-       ZXing    : fallback untuk QR Code
+       ZXing Multi-format : support semua jenis barcode
+       (EAN-13, EAN-8, UPC-A, Code128, QR Code, dll)
+       CDN yang stabil dan kompatibel semua browser
        ===================================================== -->
-  <script src="https://unpkg.com/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
-  <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+  <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
 
   <style>
     /* =====================================================
@@ -460,13 +459,13 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* =====================================================
-       OVERLAY SCANNER — dioptimasi untuk barcode batang
+       OVERLAY SCANNER
        ===================================================== */
     .scan-overlay {
       display         : none;
       position        : fixed;
       inset           : 0;
-      background      : rgba(0, 0, 0, 0.88);
+      background      : rgba(0,0,0,0.88);
       z-index         : 100;
       align-items     : flex-end;
       justify-content : center;
@@ -487,146 +486,104 @@
     }
 
     .scan-handle {
-      width         : 36px;
-      height        : 4px;
-      background    : var(--c-border);
-      border-radius : 2px;
-      margin        : 0 auto 14px;
+      width: 36px; height: 4px;
+      background: var(--c-border);
+      border-radius: 2px;
+      margin: 0 auto 14px;
     }
 
     .scan-modal-title {
-      font-size      : 13px;
-      font-weight    : 500;
-      text-transform : uppercase;
-      letter-spacing : 0.08em;
-      margin-bottom  : 4px;
+      font-size: 13px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 4px;
     }
 
-    /* Info tipe barcode yang terdeteksi */
     .scan-detected {
-      font-size     : 11px;
-      color         : var(--c-in);
-      font-weight   : 500;
-      margin-bottom : 8px;
-      min-height    : 16px;
-      letter-spacing: 0.05em;
+      font-size: 11px; color: var(--c-in);
+      font-weight: 500; margin-bottom: 8px;
+      min-height: 16px; letter-spacing: 0.05em;
     }
 
     /* =====================================================
-       VIEWPORT KAMERA — landscape untuk barcode batang
+       VIEWPORT KAMERA — rasio landscape untuk barcode batang
        ===================================================== */
     .scan-viewport {
-      position        : relative;
-      width           : 100%;
-      /* Landscape ratio lebih baik untuk barcode batang horizontal */
-      aspect-ratio    : 16 / 9;
-      background      : #000;
-      border-radius   : var(--radius-md);
-      overflow        : hidden;
-      margin-bottom   : 10px;
+      position     : relative;
+      width        : 100%;
+      aspect-ratio : 16 / 9;
+      background   : #000;
+      border-radius: var(--radius-md);
+      overflow     : hidden;
+      margin-bottom: 10px;
     }
 
-    /* Video Quagga2 dirender via <video> internal */
-    #quagga-viewport {
-      width    : 100%;
-      height   : 100%;
-      position : relative;
-    }
-
-    #quagga-viewport video {
+    /* Video element utama */
+    #scan-video {
       width      : 100%;
       height     : 100%;
       object-fit : cover;
       display    : block;
     }
 
-    /* Canvas overlay Quagga2 — tempat garis deteksi digambar */
-    #quagga-viewport canvas {
+    /* Canvas overlay untuk garis deteksi */
+    #scan-canvas {
       position : absolute;
-      top      : 0;
-      left     : 0;
-      width    : 100% !important;
-      height   : 100% !important;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
     }
 
     /* =====================================================
-       ROI — Region of Interest (kotak fokus scan)
-       Area tengah yang diprioritaskan untuk pembacaan
+       ROI — kotak panduan scan di tengah
        ===================================================== */
     .scan-roi {
       position      : absolute;
-      top           : 50%;
-      left          : 50%;
+      top: 50%; left: 50%;
       transform     : translate(-50%, -50%);
-      width         : 80%;
-      height        : 35%;
-      border        : 2px solid rgba(34, 197, 94, 0.8);
+      width         : 85%;
+      height        : 40%;
+      border        : 2px solid rgba(34,197,94,0.85);
       border-radius : 4px;
       pointer-events: none;
       z-index       : 10;
     }
 
-    /* Sudut ROI yang lebih tebal untuk panduan visual */
-    .scan-roi::before,
-    .scan-roi::after {
-      content       : '';
-      position      : absolute;
-      width         : 20px;
-      height        : 20px;
-      border-color  : #22c55e;
-      border-style  : solid;
+    /* Sudut dekoratif */
+    .scan-roi::before, .scan-roi::after {
+      content: ''; position: absolute;
+      width: 18px; height: 18px;
+      border-color: #22c55e; border-style: solid;
     }
+    .scan-roi::before { top:-2px; left:-2px; border-width:3px 0 0 3px; border-radius:3px 0 0 0; }
+    .scan-roi::after  { bottom:-2px; right:-2px; border-width:0 3px 3px 0; border-radius:0 0 3px 0; }
 
-    .scan-roi::before {
-      top           : -2px;
-      left          : -2px;
-      border-width  : 3px 0 0 3px;
-      border-radius : 3px 0 0 0;
-    }
-
-    .scan-roi::after {
-      bottom        : -2px;
-      right         : -2px;
-      border-width  : 0 3px 3px 0;
-      border-radius : 0 0 3px 0;
-    }
-
-    /* Garis scan horizontal animasi */
+    /* Garis scan animasi */
     .scan-line-h {
-      position   : absolute;
-      top        : 50%;
-      left       : 5%;
-      width      : 90%;
-      height     : 1.5px;
-      background : rgba(34, 197, 94, 0.7);
-      animation  : scan-h 1.8s ease-in-out infinite;
+      position  : absolute;
+      left: 5%; width: 90%; height: 1.5px;
+      background: rgba(34,197,94,0.8);
+      animation : scan-h 1.8s ease-in-out infinite;
     }
 
     @keyframes scan-h {
-      0%   { top: 20%; opacity: 0.4; }
-      50%  { top: 80%; opacity: 1;   }
-      100% { top: 20%; opacity: 0.4; }
+      0%   { top: 15%; opacity: 0.4; }
+      50%  { top: 82%; opacity: 1;   }
+      100% { top: 15%; opacity: 0.4; }
     }
 
     /* =====================================================
        STATUS SCANNER
        ===================================================== */
     .scan-status {
-      display         : flex;
-      align-items     : center;
-      justify-content : center;
-      gap             : 6px;
-      font-size       : 12px;
-      color           : var(--c-text-2);
-      margin-bottom   : 10px;
+      display: flex; align-items: center;
+      justify-content: center; gap: 6px;
+      font-size: 12px; color: var(--c-text-2);
+      margin-bottom: 10px;
     }
 
     .scan-status-dot {
-      width         : 6px;
-      height        : 6px;
-      border-radius : 50%;
-      background    : var(--c-border);
-      transition    : background 0.3s;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--c-border); transition: background 0.3s;
     }
 
     .scan-status-dot.active  { background: var(--c-in); animation: pulse 1s infinite; }
@@ -634,77 +591,57 @@
     .scan-status-dot.error   { background: var(--c-out); }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.4; }
+      0%, 100% { opacity: 1; } 50% { opacity: 0.35; }
     }
 
     /* =====================================================
-       TAB SWITCH — Scan / Manual
+       TAB KAMERA / MANUAL
        ===================================================== */
     .scan-tabs {
-      display       : flex;
-      border        : 1px solid var(--c-border);
-      border-radius : var(--radius-sm);
-      overflow      : hidden;
-      margin-bottom : 12px;
+      display: flex;
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      overflow: hidden; margin-bottom: 12px;
     }
 
     .scan-tab {
-      flex           : 1;
-      padding        : 8px 0;
-      font-size      : 12px;
-      font-weight    : 500;
-      letter-spacing : 0.05em;
-      text-transform : uppercase;
-      border         : none;
-      cursor         : pointer;
-      background     : transparent;
-      color          : var(--c-text-2);
-      transition     : background 0.15s, color 0.15s;
+      flex: 1; padding: 8px 0;
+      font-size: 12px; font-weight: 500;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      border: none; cursor: pointer;
+      background: transparent; color: var(--c-text-2);
+      transition: background 0.15s, color 0.15s;
     }
 
     .scan-tab.active { background: var(--c-accent); color: #fff; }
 
-    /* =====================================================
-       PANEL MANUAL INPUT
-       ===================================================== */
+    /* Panel manual */
     .manual-panel { display: none; padding: 4px 0 8px; }
     .manual-panel.show { display: block; }
 
     .scan-modal input[type="text"] {
-      margin-bottom  : 10px;
-      font-family    : var(--font-mono);
-      text-align     : center;
-      letter-spacing : 0.1em;
+      margin-bottom: 10px;
+      font-family: var(--font-mono);
+      text-align: center; letter-spacing: 0.1em;
     }
 
     /* =====================================================
-       TOMBOL CLOSE SCANNER
+       TOMBOL TUTUP SCANNER
        ===================================================== */
     .scan-close-btn {
-      width         : 100%;
-      padding       : 12px;
-      background    : var(--c-accent);
-      color         : #fff;
-      border        : none;
-      border-radius : var(--radius-sm);
-      cursor        : pointer;
-      font-size     : 14px;
-      font-weight   : 500;
-      min-height    : var(--touch-min);
-      transition    : opacity 0.15s;
+      width: 100%; padding: 12px;
+      background: var(--c-accent); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      cursor: pointer; font-size: 14px; font-weight: 500;
+      min-height: var(--touch-min); transition: opacity 0.15s;
     }
 
     .scan-close-btn:active { opacity: 0.85; }
 
-    /* =====================================================
-       TIPS SCAN
-       ===================================================== */
+    /* Tips */
     .scan-tips {
-      font-size     : 11px;
-      color         : var(--c-text-2);
-      margin-bottom : 10px;
-      line-height   : 1.5;
+      font-size: 11px; color: var(--c-text-2);
+      margin-bottom: 10px; line-height: 1.5;
     }
 
     /* =====================================================
@@ -857,9 +794,7 @@
 
   </div><!-- /container -->
 
-  <!-- =====================================================
-       OVERLAY SCANNER
-       ===================================================== -->
+  <!-- OVERLAY SCANNER -->
   <div class="scan-overlay" id="scan-overlay">
     <div class="scan-modal">
       <div class="scan-handle"></div>
@@ -868,10 +803,8 @@
 
       <!-- Viewport kamera -->
       <div class="scan-viewport">
-        <div id="quagga-viewport">
-          <!-- Quagga2 inject video & canvas ke sini -->
-        </div>
-        <!-- ROI guide box -->
+        <video id="scan-video" autoplay muted playsinline></video>
+        <canvas id="scan-canvas"></canvas>
         <div class="scan-roi">
           <div class="scan-line-h"></div>
         </div>
@@ -883,7 +816,7 @@
         <span id="scan-hint">Memulai kamera...</span>
       </div>
 
-      <!-- Tab: Kamera / Manual -->
+      <!-- Tab -->
       <div class="scan-tabs">
         <button class="scan-tab active" id="tab-cam"    onclick="switchTab('cam')">Kamera</button>
         <button class="scan-tab"        id="tab-manual" onclick="switchTab('manual')">Manual</button>
@@ -892,21 +825,17 @@
       <!-- Panel manual -->
       <div class="manual-panel" id="manual-panel">
         <input
-          type="text"
-          id="scan-manual"
+          type="text" id="scan-manual"
           placeholder="Ketik barcode lalu tekan Enter"
-          onkeydown="if (event.key === 'Enter') manualBarcode()"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
+          onkeydown="if(event.key==='Enter') manualBarcode()"
+          autocomplete="off" autocorrect="off"
+          autocapitalize="off" spellcheck="false"
           inputmode="text"
         />
       </div>
 
-      <!-- Tips -->
-      <div class="scan-tips" id="scan-tips">
-        Posisikan barcode di tengah kotak hijau · Jarak ideal 10–20 cm · Pastikan cahaya cukup
+      <div class="scan-tips">
+        Posisikan barcode di dalam kotak hijau · Jarak 10–20 cm · Pastikan cahaya cukup
       </div>
 
       <button class="scan-close-btn" onclick="closeScanner()">Tutup Scanner</button>
@@ -923,17 +852,15 @@
     /* --------------------------------------------------
        KONSTANTA & STATE
     -------------------------------------------------- */
-    const STORE_KEY   = 'inv_data_v1';
-
-    let currentMode   = 'in';
-    let currentFilter = 'all';
-    let isScanning    = false;
-    let quaggaActive  = false;
-
-    /* Buffer hasil scan — hindari duplikat deteksi cepat */
-    let lastScanned   = '';
-    let lastScannedAt = 0;
-    const SCAN_DEBOUNCE_MS = 1500;
+    const STORE_KEY        = 'inv_data_v1';
+    let currentMode        = 'in';
+    let currentFilter      = 'all';
+    let activeStream       = null;   /* MediaStream kamera aktif */
+    let zxingReader        = null;   /* instance ZXing */
+    let scanLoopActive     = false;  /* flag loop scan */
+    let lastScanned        = '';
+    let lastScannedAt      = 0;
+    const DEBOUNCE_MS      = 1500;
 
     /* --------------------------------------------------
        DATABASE — localStorage
@@ -1030,48 +957,39 @@
     }
 
     function renderTable(data) {
-      let html = `
-        <div class="table-wrap table-desktop">
-          <table>
-            <thead>
-              <tr>
-                <th>Tanggal</th><th>Waktu</th><th>Barcode</th>
-                <th>Nama Barang</th><th style="text-align:right">Qty</th>
-                <th>Tipe</th><th class="col-hide">Keterangan</th>
-              </tr>
-            </thead><tbody>`;
-
+      let html = `<div class="table-wrap table-desktop"><table>
+        <thead><tr>
+          <th>Tanggal</th><th>Waktu</th><th>Barcode</th>
+          <th>Nama Barang</th><th style="text-align:right">Qty</th>
+          <th>Tipe</th><th class="col-hide">Keterangan</th>
+        </tr></thead><tbody>`;
       data.forEach(r => {
         html += `<tr>
-          <td>${r.date}</td>
-          <td>${r.time || '-'}</td>
-          <td class="td-barcode">${r.barcode}</td>
-          <td>${r.name}</td>
+          <td>${r.date}</td><td>${r.time||'-'}</td>
+          <td class="td-barcode">${r.barcode}</td><td>${r.name}</td>
           <td class="td-qty">${r.qty}</td>
-          <td><span class="tag ${r.mode}">${r.mode === 'in' ? 'Masuk' : 'Keluar'}</span></td>
-          <td class="td-note col-hide">${r.note || '-'}</td>
+          <td><span class="tag ${r.mode}">${r.mode==='in'?'Masuk':'Keluar'}</span></td>
+          <td class="td-note col-hide">${r.note||'-'}</td>
         </tr>`;
       });
-
       return html + '</tbody></table></div>';
     }
 
     function renderCards(data) {
       let html = '<div class="table-wrap card-list">';
       data.forEach(r => {
-        html += `
-          <div class="record-card">
-            <div class="rc-top">
-              <div class="rc-name">${r.name}</div>
-              <div class="rc-qty">×${r.qty}</div>
-            </div>
-            <div class="rc-meta">
-              <span class="tag ${r.mode}">${r.mode === 'in' ? 'Masuk' : 'Keluar'}</span>
-              <span class="rc-barcode">${r.barcode}</span>
-              <span class="rc-date">${r.date} ${r.time || ''}</span>
-              ${r.note ? `<span class="rc-note">${r.note}</span>` : ''}
-            </div>
-          </div>`;
+        html += `<div class="record-card">
+          <div class="rc-top">
+            <div class="rc-name">${r.name}</div>
+            <div class="rc-qty">×${r.qty}</div>
+          </div>
+          <div class="rc-meta">
+            <span class="tag ${r.mode}">${r.mode==='in'?'Masuk':'Keluar'}</span>
+            <span class="rc-barcode">${r.barcode}</span>
+            <span class="rc-date">${r.date} ${r.time||''}</span>
+            ${r.note?`<span class="rc-note">${r.note}</span>`:''}
+          </div>
+        </div>`;
       });
       return html + '</div>';
     }
@@ -1091,9 +1009,7 @@
     -------------------------------------------------- */
     function clearAll() {
       if (!confirm('Yakin ingin menghapus semua data riwayat?')) return;
-      saveDB([]);
-      renderLog();
-      updateStats();
+      saveDB([]); renderLog(); updateStats();
       showToast('Semua data berhasil dihapus');
     }
 
@@ -1103,18 +1019,16 @@
     function exportCSV() {
       const db = getDB();
       if (!db.length) { showToast('Tidak ada data untuk diexport'); return; }
-
       const header = 'Tanggal,Waktu,Barcode,Nama Barang,Qty,Tipe,Keterangan';
       const rows   = db.map(r =>
-        `${r.date},${r.time || ''},"${r.barcode}","${r.name}",${r.qty},` +
-        `${r.mode === 'in' ? 'Masuk' : 'Keluar'},"${r.note || ''}"`
+        `${r.date},${r.time||''},"${r.barcode}","${r.name}",${r.qty},` +
+        `${r.mode==='in'?'Masuk':'Keluar'},"${r.note||''}"`
       );
-
       const csv  = [header, ...rows].join('\n');
       const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
-      a.href     = url;
+      a.href = url;
       a.download = 'inventory_' + new Date().toISOString().slice(0, 10) + '.csv';
       a.click();
       URL.revokeObjectURL(url);
@@ -1131,239 +1045,237 @@
     }
 
     /* --------------------------------------------------
-       HELPER — update status UI scanner
+       STATUS UI SCANNER
     -------------------------------------------------- */
     function setScanStatus(state, msg) {
-      const dot  = document.getElementById('scan-dot');
-      const hint = document.getElementById('scan-hint');
-      dot.className  = 'scan-status-dot ' + state;
-      hint.textContent = msg;
+      document.getElementById('scan-dot').className  = 'scan-status-dot ' + state;
+      document.getElementById('scan-hint').textContent = msg;
     }
 
     /* --------------------------------------------------
-       SCANNER — buka
+       SCANNER — buka modal & mulai kamera
     -------------------------------------------------- */
-    function openScanner() {
+    async function openScanner() {
       lastScanned   = '';
       lastScannedAt = 0;
       document.getElementById('scan-overlay').classList.add('open');
       document.getElementById('scan-detected').textContent = '';
       setScanStatus('', 'Memulai kamera...');
       switchTab('cam');
-      startQuagga();
+      await startCamera();
     }
 
     /* --------------------------------------------------
-       QUAGGA2 — inisialisasi scanner barcode batang
-       Konfigurasi dioptimasi untuk retail barcode:
-       EAN-13, EAN-8, UPC-A, UPC-E, Code128, Code39
+       KAMERA — akses & tampilkan di <video>
+       Coba beberapa konfigurasi agar kompatibel
+       di semua perangkat (Android, iPhone, PC)
     -------------------------------------------------- */
-    function startQuagga() {
-      if (typeof Quagga === 'undefined') {
-        setScanStatus('error', 'Library tidak tersedia, gunakan tab Manual');
+    async function startCamera() {
+      const video = document.getElementById('scan-video');
+
+      /* Daftar konfigurasi kamera — dicoba urut dari terbaik */
+      const constraints = [
+        /* 1. Kamera belakang HD */
+        { video: { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+        /* 2. Kamera belakang standard */
+        { video: { facingMode: 'environment' } },
+        /* 3. Kamera mana saja dengan HD */
+        { video: { width: { ideal: 1280 }, height: { ideal: 720 } } },
+        /* 4. Kamera mana saja — fallback paling dasar */
+        { video: true },
+      ];
+
+      for (const constraint of constraints) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia(constraint);
+          activeStream      = stream;
+          video.srcObject   = stream;
+
+          /* Tunggu video siap diputar */
+          await new Promise((resolve, reject) => {
+            video.onloadedmetadata = resolve;
+            video.onerror          = reject;
+            setTimeout(resolve, 3000); /* timeout 3 detik */
+          });
+
+          await video.play();
+
+          /* Aktifkan torch/flash jika ada (Android Chrome) */
+          tryEnableTorch(stream);
+
+          setScanStatus('active', 'Arahkan barcode ke kotak hijau...');
+          startScanLoop();
+          return; /* berhasil — hentikan loop */
+
+        } catch (err) {
+          console.warn('Camera constraint failed, trying next...', err.message);
+          if (activeStream) {
+            activeStream.getTracks().forEach(t => t.stop());
+            activeStream = null;
+          }
+        }
+      }
+
+      /* Semua konfigurasi gagal */
+      setScanStatus('error', 'Kamera tidak bisa diakses. Coba tab Manual.');
+    }
+
+    /* --------------------------------------------------
+       TORCH — nyalakan flash kamera belakang jika ada
+    -------------------------------------------------- */
+    function tryEnableTorch(stream) {
+      try {
+        const track = stream.getVideoTracks()[0];
+        if (track && track.getCapabilities) {
+          const caps = track.getCapabilities();
+          if (caps.torch) {
+            track.applyConstraints({ advanced: [{ torch: false }] });
+          }
+        }
+      } catch (e) { /* torch tidak wajib */ }
+    }
+
+    /* --------------------------------------------------
+       SCAN LOOP — baca frame video tiap 200ms via ZXing
+       Lebih reliable daripada decodeFromVideoDevice
+       karena kita kontrol sendiri timing-nya
+    -------------------------------------------------- */
+    function startScanLoop() {
+      if (typeof ZXing === 'undefined') {
+        setScanStatus('error', 'Library scanner tidak dimuat. Gunakan tab Manual.');
         return;
       }
 
-      const viewport = document.getElementById('quagga-viewport');
-      viewport.innerHTML = ''; /* bersihkan instance sebelumnya */
+      /* Buat reader dengan semua format barcode */
+      const hints = new Map();
+      const formats = [
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.EAN_8,
+        ZXing.BarcodeFormat.UPC_A,
+        ZXing.BarcodeFormat.UPC_E,
+        ZXing.BarcodeFormat.CODE_128,
+        ZXing.BarcodeFormat.CODE_39,
+        ZXing.BarcodeFormat.ITF,
+        ZXing.BarcodeFormat.QR_CODE,
+        ZXing.BarcodeFormat.DATA_MATRIX,
+      ];
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+      /* TRY_HARDER = usaha lebih keras untuk baca barcode sulit */
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
 
-      Quagga.init({
-        inputStream: {
-          type        : 'LiveStream',
-          target      : viewport,
-          constraints : {
-            /* Resolusi tinggi untuk akurasi barcode batang */
-            width      : { min: 640, ideal: 1280, max: 1920 },
-            height     : { min: 480, ideal: 720,  max: 1080 },
-            /* Kamera belakang — lebih jernih untuk scan */
-            facingMode : 'environment',
-            /* Fokus otomatis kontinu */
-            focusMode  : 'continuous',
-          },
-          /* ROI — hanya proses area tengah frame (lebih cepat & akurat) */
-          area: {
-            top    : '20%',
-            right  : '10%',
-            left   : '10%',
-            bottom : '20%',
-          },
-        },
+      zxingReader    = new ZXing.MultiFormatReader();
+      zxingReader.setHints(hints);
+      scanLoopActive = true;
 
-        /* Decoder — format barcode yang didukung */
-        decoder: {
-          readers: [
-            'ean_reader',       /* EAN-13 — paling umum di produk retail */
-            'ean_8_reader',     /* EAN-8  — versi pendek EAN */
-            'upc_reader',       /* UPC-A  — Amerika */
-            'upc_e_reader',     /* UPC-E  — versi kompak UPC */
-            'code_128_reader',  /* Code128 — barcode internal gudang */
-            'code_39_reader',   /* Code39  — barcode lama */
-            'itf_reader',       /* ITF-14  — karton/packaging */
-          ],
-          /* Scan lebih dari 1 barcode per frame untuk konfirmasi */
-          multiple: false,
-        },
+      const video  = document.getElementById('scan-video');
+      const canvas = document.getElementById('scan-canvas');
+      const ctx    = canvas.getContext('2d');
 
-        /* Lokator — algoritma pencarian barcode di frame */
-        locator: {
-          patchSize    : 'medium',  /* medium = balance kecepatan & akurasi */
-          halfSample   : true,      /* proses setengah resolusi = lebih cepat */
-        },
+      function tick() {
+        if (!scanLoopActive) return;
 
-        /* Jumlah worker untuk processing paralel */
-        numOfWorkers : navigator.hardwareConcurrency
-          ? Math.min(navigator.hardwareConcurrency, 4)
-          : 2,
+        /* Pastikan video sudah punya frame */
+        if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
+          /* Sesuaikan canvas dengan ukuran video actual */
+          canvas.width  = video.videoWidth;
+          canvas.height = video.videoHeight;
 
-        /* Frekuensi deteksi per detik */
-        frequency : 10,
+          /* Gambar frame video ke canvas */
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        /* Debug — matikan di production */
-        debug: false,
+          try {
+            /* Ambil data pixel dari canvas */
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const luminance = new ZXing.RGBLuminanceSource(
+              imageData.data,
+              canvas.width,
+              canvas.height
+            );
+            const binaryBitmap = new ZXing.BinaryBitmap(
+              new ZXing.HybridBinarizer(luminance)
+            );
 
-        /* Canvas overlay untuk visualisasi deteksi */
-        locate: true,
+            /* Coba decode barcode */
+            const result = zxingReader.decode(binaryBitmap);
 
-      }, function(err) {
-        if (err) {
-          console.error('Quagga init error:', err);
-          setScanStatus('error', 'Kamera tidak dapat diakses. Gunakan tab Manual.');
-          return;
-        }
+            if (result) {
+              const code = result.getText();
+              onBarcodeDetected(code, result.getBarcodeFormat());
+            }
 
-        Quagga.start();
-        quaggaActive = true;
-        setScanStatus('active', 'Arahkan barcode ke kotak hijau...');
-      });
-
-      /* --------------------------------------------------
-         EVENT: setiap frame diproses
-         Gambar garis deteksi di canvas overlay
-      -------------------------------------------------- */
-      Quagga.onProcessed(function(result) {
-        const drawingCtx    = Quagga.canvas.ctx.overlay;
-        const drawingCanvas = Quagga.canvas.dom.overlay;
-
-        if (!drawingCtx || !drawingCanvas) return;
-
-        drawingCtx.clearRect(
-          0, 0,
-          parseInt(drawingCanvas.getAttribute('width')),
-          parseInt(drawingCanvas.getAttribute('height'))
-        );
-
-        if (result && result.boxes) {
-          result.boxes
-            .filter(box => box !== result.box)
-            .forEach(box => {
-              Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, {
-                color : 'rgba(255,255,255,0.3)',
-                lineWidth: 1,
-              });
-            });
-        }
-
-        if (result && result.box) {
-          Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, {
-            color     : 'rgba(34,197,94,0.6)',
-            lineWidth : 2,
-          });
-        }
-
-        if (result && result.codeResult && result.codeResult.code) {
-          Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, {
-            color     : '#22c55e',
-            lineWidth : 3,
-          });
-        }
-      });
-
-      /* --------------------------------------------------
-         EVENT: barcode berhasil terdeteksi
-      -------------------------------------------------- */
-      Quagga.onDetected(function(result) {
-        const code   = result.codeResult.code;
-        const format = result.codeResult.format;
-
-        /* Validasi: pastikan barcode tidak kosong */
-        if (!code || code.length < 4) return;
-
-        /* Debounce: hindari duplikat scan dalam 1.5 detik */
-        const now = Date.now();
-        if (code === lastScanned && (now - lastScannedAt) < SCAN_DEBOUNCE_MS) return;
-
-        /* Validasi akurasi: Quagga memberi skor per karakter */
-        const decodedCodes = result.codeResult.decodedCodes;
-        if (decodedCodes && decodedCodes.length > 0) {
-          const errors = decodedCodes
-            .filter(c => c.error !== undefined)
-            .map(c => c.error);
-
-          if (errors.length > 0) {
-            const avgError = errors.reduce((a, b) => a + b, 0) / errors.length;
-            /* Tolak jika error rate terlalu tinggi (threshold 0.25) */
-            if (avgError > 0.25) return;
+          } catch (e) {
+            /* NotFoundException normal — artinya tidak ada barcode di frame ini */
+            /* Jangan tampilkan error, lanjut scan */
           }
         }
 
-        lastScanned   = code;
-        lastScannedAt = now;
+        /* Loop berikutnya setelah 200ms */
+        setTimeout(tick, 200);
+      }
 
-        /* Tampilkan info format barcode */
-        const formatLabel = {
-          'ean_13'  : 'EAN-13',
-          'ean_8'   : 'EAN-8',
-          'upc_a'   : 'UPC-A',
-          'upc_e'   : 'UPC-E',
-          'code_128': 'Code 128',
-          'code_39' : 'Code 39',
-          'itf'     : 'ITF-14',
-        };
-
-        const label = formatLabel[format] || format.toUpperCase();
-        document.getElementById('scan-detected').textContent =
-          `Terdeteksi: ${label}`;
-
-        setScanStatus('success', `Berhasil: ${code}`);
-
-        /* Isi input barcode */
-        document.getElementById('inp-barcode').value = code;
-
-        /* Vibrate di HP */
-        if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
-
-        showToast(`Barcode ${label} berhasil discan!`);
-
-        /* Tutup scanner setelah 600ms (beri waktu user lihat feedback) */
-        setTimeout(() => closeScanner(), 600);
-      });
+      tick(); /* mulai loop */
     }
 
     /* --------------------------------------------------
-       SCANNER — tutup & bersihkan Quagga
+       CALLBACK — barcode berhasil terdeteksi
+    -------------------------------------------------- */
+    function onBarcodeDetected(code, format) {
+      if (!code || code.length < 3) return;
+
+      /* Debounce — cegah scan ganda */
+      const now = Date.now();
+      if (code === lastScanned && (now - lastScannedAt) < DEBOUNCE_MS) return;
+
+      lastScanned   = code;
+      lastScannedAt = now;
+
+      /* Label format barcode */
+      const fmtLabel = {
+        14 : 'EAN-13', 13: 'EAN-8',
+        1  : 'UPC-A',  15: 'UPC-E',
+        7  : 'Code 128', 4: 'Code 39',
+        11 : 'ITF',    11: 'QR Code',
+      };
+
+      const label = (format !== undefined && fmtLabel[format]) || 'Barcode';
+      document.getElementById('scan-detected').textContent = `✓ Terdeteksi: ${label}`;
+      setScanStatus('success', `Berhasil membaca: ${code}`);
+
+      /* Isi input utama */
+      document.getElementById('inp-barcode').value = code;
+
+      /* Feedback haptic */
+      if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+
+      showToast(`${label} berhasil discan!`);
+
+      /* Tutup scanner setelah feedback terlihat */
+      setTimeout(() => closeScanner(), 700);
+    }
+
+    /* --------------------------------------------------
+       SCANNER — tutup & bersihkan semua resource
     -------------------------------------------------- */
     function closeScanner() {
-      if (quaggaActive) {
-        try {
-          Quagga.offDetected();
-          Quagga.offProcessed();
-          Quagga.stop();
-        } catch (e) {
-          console.warn('Quagga stop error:', e);
-        }
-        quaggaActive = false;
+      /* Hentikan loop scan */
+      scanLoopActive = false;
+      zxingReader    = null;
+
+      /* Matikan kamera */
+      if (activeStream) {
+        activeStream.getTracks().forEach(t => t.stop());
+        activeStream = null;
       }
 
-      /* Stop semua track kamera yang masih aktif */
-      const videos = document.querySelectorAll('#quagga-viewport video');
-      videos.forEach(v => {
-        if (v.srcObject) {
-          v.srcObject.getTracks().forEach(t => t.stop());
-          v.srcObject = null;
-        }
-      });
+      /* Reset video element */
+      const video = document.getElementById('scan-video');
+      video.srcObject = null;
 
-      isScanning = false;
+      /* Bersihkan canvas */
+      const canvas = document.getElementById('scan-canvas');
+      const ctx    = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       document.getElementById('scan-overlay').classList.remove('open');
       document.getElementById('scan-detected').textContent = '';
       setScanStatus('', 'Memulai kamera...');
@@ -1376,7 +1288,6 @@
       document.getElementById('tab-cam').className    = 'scan-tab' + (tab === 'cam'    ? ' active' : '');
       document.getElementById('tab-manual').className = 'scan-tab' + (tab === 'manual' ? ' active' : '');
       document.getElementById('manual-panel').className = 'manual-panel' + (tab === 'manual' ? ' show' : '');
-
       if (tab === 'manual') {
         setTimeout(() => document.getElementById('scan-manual').focus(), 100);
       }
@@ -1433,6 +1344,7 @@
       renderLog();
       updateStats();
     })();
+
 
   </script>
 </body>
