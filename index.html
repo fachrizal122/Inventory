@@ -9,668 +9,397 @@
   <meta name="theme-color" content="#1a1a1a" />
   <title>Inventory</title>
 
-  <!-- =====================================================
-       LIBRARY BARCODE SCANNER
-       ZXing Multi-format : support semua jenis barcode
-       (EAN-13, EAN-8, UPC-A, Code128, QR Code, dll)
-       CDN yang stabil dan kompatibel semua browser
-       ===================================================== -->
+  <!--
+    SCANNER ENGINE (urutan prioritas):
+    1. BarcodeDetector API  — built-in Chrome Android/Desktop, CEPAT & AKURAT
+    2. ZXing                — fallback untuk iPhone Safari & browser lama
+  -->
   <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
 
   <style>
-    /* =====================================================
-       CSS RESET & VARIABEL
-       ===================================================== */
+    /* ===========================================
+       RESET & VARIABEL
+    =========================================== */
     *, *::before, *::after {
-      box-sizing  : border-box;
-      margin      : 0;
-      padding     : 0;
+      box-sizing: border-box; margin: 0; padding: 0;
       -webkit-tap-highlight-color: transparent;
     }
 
     :root {
-      --c-bg        : #ffffff;
-      --c-bg-2      : #f5f5f5;
-      --c-bg-3      : #e8e8e8;
-      --c-text      : #0a0a0a;
-      --c-text-2    : #555555;
-      --c-border    : #d0d0d0;
-      --c-accent    : #1a1a1a;
-      --c-in        : #16a34a;
-      --c-in-bg     : #f0fdf4;
-      --c-out       : #dc2626;
-      --c-out-bg    : #fef2f2;
-      --radius-sm   : 4px;
-      --radius-md   : 6px;
-      --radius-lg   : 10px;
-      --font-main   : system-ui, -apple-system, sans-serif;
-      --font-mono   : 'Courier New', monospace;
-      --touch-min   : 44px;
+      --bg       : #ffffff;
+      --bg2      : #f5f5f5;
+      --bg3      : #e8e8e8;
+      --tx       : #0a0a0a;
+      --tx2      : #555555;
+      --bd       : #d0d0d0;
+      --ac       : #1a1a1a;
+      --in       : #16a34a;
+      --in-bg    : #f0fdf4;
+      --out      : #dc2626;
+      --out-bg   : #fef2f2;
+      --r-sm     : 4px;
+      --r-md     : 6px;
+      --r-lg     : 10px;
+      --font     : system-ui, -apple-system, sans-serif;
+      --mono     : 'Courier New', monospace;
+      --touch    : 44px;
     }
 
     html { font-size: 16px; }
 
     body {
-      font-family    : var(--font-main);
-      background     : var(--c-bg-2);
-      color          : var(--c-text);
-      min-height     : 100vh;
+      font-family    : var(--font);
+      background     : var(--bg2);
+      color          : var(--tx);
       min-height     : 100dvh;
       padding        : 1rem;
       padding-bottom : 2rem;
     }
 
-    /* =====================================================
-       LAYOUT UTAMA
-       ===================================================== */
     .container { max-width: 760px; margin: 0 auto; }
 
-    /* =====================================================
-       HEADER
-       ===================================================== */
+    /* Header */
     .header {
-      display         : flex;
-      align-items     : center;
-      justify-content : space-between;
-      margin-bottom   : 1.25rem;
-      padding-bottom  : 0.875rem;
-      border-bottom   : 1.5px solid var(--c-accent);
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.875rem;
+      border-bottom: 1.5px solid var(--ac);
     }
+    .logo { font-size: 15px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .logo span { font-weight: 400; color: var(--tx2); }
+    .clock { font-size: 12px; color: var(--tx2); font-variant-numeric: tabular-nums; }
 
-    .logo {
-      font-size      : 15px;
-      font-weight    : 600;
-      letter-spacing : 0.08em;
-      text-transform : uppercase;
-    }
-
-    .logo span { font-weight: 400; color: var(--c-text-2); }
-
-    .header-right { display: flex; align-items: center; gap: 10px; }
-
-    .clock {
-      font-size            : 12px;
-      color                : var(--c-text-2);
-      font-variant-numeric : tabular-nums;
-      letter-spacing       : 0.05em;
-    }
-
-    /* =====================================================
-       SWITCH MODE
-       ===================================================== */
+    /* Switch mode */
     .switch-row {
-      display       : flex;
-      margin-bottom : 1rem;
-      border        : 1.5px solid var(--c-accent);
-      border-radius : var(--radius-md);
-      overflow      : hidden;
+      display: flex; margin-bottom: 1rem;
+      border: 1.5px solid var(--ac);
+      border-radius: var(--r-md); overflow: hidden;
     }
-
     .sw-btn {
-      flex           : 1;
-      padding        : 12px 0;
-      font-size      : 13px;
-      font-weight    : 500;
-      letter-spacing : 0.06em;
-      text-transform : uppercase;
-      border         : none;
-      cursor         : pointer;
-      background     : transparent;
-      color          : var(--c-text-2);
-      transition     : background 0.15s, color 0.15s;
-      min-height     : var(--touch-min);
+      flex: 1; padding: 12px 0; font-size: 13px; font-weight: 500;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      border: none; cursor: pointer; background: transparent;
+      color: var(--tx2); transition: background 0.15s, color 0.15s;
+      min-height: var(--touch);
     }
+    .sw-btn.active-in  { background: var(--in);  color: #fff; }
+    .sw-btn.active-out { background: var(--out); color: #fff; }
 
-    .sw-btn.active-in  { background: var(--c-in);  color: #fff; }
-    .sw-btn.active-out { background: var(--c-out); color: #fff; }
-
-    /* =====================================================
-       BADGE MODE AKTIF
-       ===================================================== */
+    /* Badge */
     .mode-badge {
-      display        : inline-flex;
-      align-items    : center;
-      gap            : 6px;
-      font-size      : 11px;
-      font-weight    : 500;
-      letter-spacing : 0.08em;
-      text-transform : uppercase;
-      padding        : 4px 10px;
-      border-radius  : var(--radius-sm);
-      margin-bottom  : 0.875rem;
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; padding: 4px 10px;
+      border-radius: var(--r-sm); margin-bottom: 0.875rem;
     }
-
-    .mode-badge.in  { background: var(--c-in-bg);  color: var(--c-in);  }
-    .mode-badge.out { background: var(--c-out-bg); color: var(--c-out); }
-
+    .mode-badge.in  { background: var(--in-bg);  color: var(--in);  }
+    .mode-badge.out { background: var(--out-bg); color: var(--out); }
     .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .dot.in  { background: var(--c-in);  }
-    .dot.out { background: var(--c-out); }
+    .dot.in  { background: var(--in);  }
+    .dot.out { background: var(--out); }
 
-    /* =====================================================
-       FORM INPUT
-       ===================================================== */
+    /* Form */
     .form-card {
-      background    : var(--c-bg);
-      border        : 1px solid var(--c-border);
-      border-radius : var(--radius-lg);
-      padding       : 1rem;
-      margin-bottom : 1rem;
+      background: var(--bg); border: 1px solid var(--bd);
+      border-radius: var(--r-lg); padding: 1rem; margin-bottom: 1rem;
     }
-
     .form-row {
-      display               : grid;
-      grid-template-columns : 1fr auto;
-      gap                   : 8px;
-      align-items           : flex-end;
-      margin-bottom         : 10px;
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 8px; align-items: flex-end; margin-bottom: 10px;
     }
-
     .form-grid-2 {
-      display               : grid;
-      grid-template-columns : 1fr 1fr;
-      gap                   : 8px;
-      margin-bottom         : 10px;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-bottom: 10px;
     }
-
     .form-group { display: flex; flex-direction: column; gap: 5px; }
-
     label {
-      font-size      : 11px;
-      font-weight    : 500;
-      letter-spacing : 0.07em;
-      text-transform : uppercase;
-      color          : var(--c-text-2);
+      font-size: 11px; font-weight: 500; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--tx2);
     }
-
-    input[type="text"],
-    input[type="number"],
-    input[type="date"] {
-      width              : 100%;
-      padding            : 10px 12px;
-      font-size          : 16px;
-      font-family        : var(--font-mono);
-      border             : 1px solid var(--c-border);
-      border-radius      : var(--radius-sm);
-      background         : var(--c-bg);
-      color              : var(--c-text);
-      transition         : border-color 0.15s;
-      min-height         : var(--touch-min);
-      -webkit-appearance : none;
-      appearance         : none;
+    input[type="text"], input[type="number"], input[type="date"] {
+      width: 100%; padding: 10px 12px; font-size: 16px;
+      font-family: var(--mono); border: 1px solid var(--bd);
+      border-radius: var(--r-sm); background: var(--bg); color: var(--tx);
+      transition: border-color 0.15s; min-height: var(--touch);
+      -webkit-appearance: none; appearance: none;
     }
+    input:focus { outline: none; border-color: var(--ac); }
 
-    input:focus { outline: none; border-color: var(--c-accent); }
-
-    /* =====================================================
-       TOMBOL SCAN
-       ===================================================== */
+    /* Scan button */
     .scan-btn {
-      display         : flex;
-      align-items     : center;
-      justify-content : center;
-      gap             : 6px;
-      padding         : 0 14px;
-      height          : var(--touch-min);
-      background      : var(--c-accent);
-      color           : #fff;
-      border          : none;
-      border-radius   : var(--radius-sm);
-      cursor          : pointer;
-      font-size       : 13px;
-      font-weight     : 500;
-      white-space     : nowrap;
-      transition      : opacity 0.15s;
-      flex-shrink     : 0;
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 0 14px; height: var(--touch);
+      background: var(--ac); color: #fff; border: none;
+      border-radius: var(--r-sm); cursor: pointer;
+      font-size: 13px; font-weight: 500; white-space: nowrap;
+      transition: opacity 0.15s; flex-shrink: 0;
     }
-
     .scan-btn:active { opacity: 0.7; }
     .scan-btn svg { width: 16px; height: 16px; }
 
-    /* =====================================================
-       TOMBOL SUBMIT
-       ===================================================== */
+    /* Submit */
     .submit-btn {
-      width          : 100%;
-      padding        : 13px;
-      font-size      : 14px;
-      font-weight    : 500;
-      letter-spacing : 0.07em;
-      text-transform : uppercase;
-      border         : none;
-      border-radius  : var(--radius-md);
-      cursor         : pointer;
-      transition     : opacity 0.15s, transform 0.1s;
-      margin-top     : 4px;
-      min-height     : var(--touch-min);
+      width: 100%; padding: 13px; font-size: 14px; font-weight: 500;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      border: none; border-radius: var(--r-md); cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      margin-top: 4px; min-height: var(--touch);
     }
-
-    .submit-btn.in  { background: var(--c-in);  color: #fff; }
-    .submit-btn.out { background: var(--c-out); color: #fff; }
+    .submit-btn.in  { background: var(--in);  color: #fff; }
+    .submit-btn.out { background: var(--out); color: #fff; }
     .submit-btn:active { transform: scale(0.98); opacity: 0.88; }
 
-    /* =====================================================
-       STATISTIK
-       ===================================================== */
+    /* Stats */
     .stats-row {
-      display               : grid;
-      grid-template-columns : 1fr 1fr 1fr;
-      gap                   : 8px;
-      margin-bottom         : 1rem;
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px; margin-bottom: 1rem;
     }
-
     .stat-card {
-      background    : var(--c-bg);
-      border        : 1px solid var(--c-border);
-      border-radius : var(--radius-md);
-      padding       : 10px 12px;
+      background: var(--bg); border: 1px solid var(--bd);
+      border-radius: var(--r-md); padding: 10px 12px;
     }
-
     .stat-label {
-      font-size      : 10px;
-      font-weight    : 500;
-      letter-spacing : 0.07em;
-      text-transform : uppercase;
-      color          : var(--c-text-2);
-      margin-bottom  : 4px;
+      font-size: 10px; font-weight: 500; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--tx2); margin-bottom: 4px;
     }
+    .stat-val { font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1; }
+    .stat-val.in  { color: var(--in);  }
+    .stat-val.out { color: var(--out); }
 
-    .stat-val {
-      font-size            : 22px;
-      font-weight          : 500;
-      font-variant-numeric : tabular-nums;
-      line-height          : 1;
-    }
-
-    .stat-val.in  { color: var(--c-in);  }
-    .stat-val.out { color: var(--c-out); }
-
-    /* =====================================================
-       SECTION RIWAYAT
-       ===================================================== */
+    /* Section */
     .section-header {
-      display         : flex;
-      align-items     : center;
-      justify-content : space-between;
-      margin-bottom   : 8px;
-      flex-wrap       : wrap;
-      gap             : 6px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px; flex-wrap: wrap; gap: 6px;
     }
-
     .section-title {
-      font-size      : 11px;
-      font-weight    : 500;
-      letter-spacing : 0.08em;
-      text-transform : uppercase;
-      color          : var(--c-text-2);
+      font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--tx2);
     }
-
     .btn-actions { display: flex; gap: 6px; }
-
     .btn-small {
-      font-size   : 10px;
-      color       : var(--c-text-2);
-      background  : none;
-      border      : 1px solid var(--c-border);
-      border-radius: var(--radius-sm);
-      padding     : 5px 10px;
-      cursor      : pointer;
-      transition  : background 0.15s;
-      min-height  : 30px;
+      font-size: 10px; color: var(--tx2); background: none;
+      border: 1px solid var(--bd); border-radius: var(--r-sm);
+      padding: 5px 10px; cursor: pointer; min-height: 30px;
     }
+    .btn-small:active { background: var(--bg3); }
 
-    .btn-small:active { background: var(--c-bg-3); }
-
-    /* =====================================================
-       FILTER
-       ===================================================== */
+    /* Filter */
     .filter-row { display: flex; gap: 6px; margin-bottom: 8px; }
-
     .filter-btn {
-      padding        : 6px 12px;
-      font-size      : 11px;
-      font-weight    : 500;
-      letter-spacing : 0.05em;
-      text-transform : uppercase;
-      border         : 1px solid var(--c-border);
-      border-radius  : var(--radius-sm);
-      background     : transparent;
-      color          : var(--c-text-2);
-      cursor         : pointer;
-      transition     : background 0.15s, color 0.15s;
-      min-height     : 32px;
+      padding: 6px 12px; font-size: 11px; font-weight: 500;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      border: 1px solid var(--bd); border-radius: var(--r-sm);
+      background: transparent; color: var(--tx2); cursor: pointer;
+      transition: background 0.15s, color 0.15s; min-height: 32px;
     }
+    .filter-btn.active { background: var(--ac); color: #fff; border-color: var(--ac); }
 
-    .filter-btn.active {
-      background   : var(--c-accent);
-      color        : #fff;
-      border-color : var(--c-accent);
-    }
-
-    /* =====================================================
-       TABEL RIWAYAT
-       ===================================================== */
+    /* Table */
     .table-wrap {
-      background    : var(--c-bg);
-      border        : 1px solid var(--c-border);
-      border-radius : var(--radius-lg);
-      overflow      : hidden;
+      background: var(--bg); border: 1px solid var(--bd);
+      border-radius: var(--r-lg); overflow: hidden;
     }
-
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-
     thead th {
-      font-size      : 10px;
-      font-weight    : 500;
-      letter-spacing : 0.07em;
-      text-transform : uppercase;
-      color          : var(--c-text-2);
-      padding        : 8px 10px;
-      text-align     : left;
-      border-bottom  : 1px solid var(--c-border);
-      background     : var(--c-bg-2);
+      font-size: 10px; font-weight: 500; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--tx2);
+      padding: 8px 10px; text-align: left;
+      border-bottom: 1px solid var(--bd); background: var(--bg2);
     }
-
     tbody td {
-      padding        : 9px 10px;
-      border-bottom  : 0.5px solid var(--c-border);
-      color          : var(--c-text);
-      vertical-align : middle;
+      padding: 9px 10px; border-bottom: 0.5px solid var(--bd);
+      color: var(--tx); vertical-align: middle;
     }
-
     tbody tr:last-child td { border-bottom: none; }
+    .td-bc   { font-family: var(--mono); font-size: 12px; }
+    .td-qty  { text-align: right; font-weight: 500; }
+    .td-note { color: var(--tx2); font-size: 12px; }
 
-    .td-barcode { font-family: var(--font-mono); font-size: 12px; }
-    .td-qty     { text-align: right; font-weight: 500; }
-    .td-note    { color: var(--c-text-2); font-size: 12px; }
-
-    /* =====================================================
-       KARTU MOBILE
-       ===================================================== */
+    /* Cards mobile */
     .card-list { display: none; }
-
-    .record-card {
-      background    : var(--c-bg);
-      border-bottom : 1px solid var(--c-border);
-      padding       : 12px;
-    }
-
+    .record-card { background: var(--bg); border-bottom: 1px solid var(--bd); padding: 12px; }
     .record-card:last-child { border-bottom: none; }
+    .rc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+    .rc-name { font-size: 14px; font-weight: 500; flex: 1; margin-right: 8px; }
+    .rc-qty  { font-size: 16px; font-weight: 600; }
+    .rc-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .rc-bc   { font-family: var(--mono); font-size: 11px; color: var(--tx2); }
+    .rc-date { font-size: 11px; color: var(--tx2); }
+    .rc-note { font-size: 11px; color: var(--tx2); font-style: italic; }
 
-    .rc-top {
-      display         : flex;
-      align-items     : flex-start;
-      justify-content : space-between;
-      margin-bottom   : 6px;
-    }
-
-    .rc-name  { font-size: 14px; font-weight: 500; color: var(--c-text); flex: 1; margin-right: 8px; }
-    .rc-qty   { font-size: 16px; font-weight: 600; color: var(--c-text); }
-    .rc-meta  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .rc-barcode { font-family: var(--font-mono); font-size: 11px; color: var(--c-text-2); }
-    .rc-date  { font-size: 11px; color: var(--c-text-2); }
-    .rc-note  { font-size: 11px; color: var(--c-text-2); font-style: italic; }
-
-    /* =====================================================
-       BADGE TIPE
-       ===================================================== */
+    /* Badge */
     .tag {
-      display        : inline-block;
-      font-size      : 10px;
-      font-weight    : 500;
-      padding        : 2px 7px;
-      border-radius  : var(--radius-sm);
-      text-transform : uppercase;
-      letter-spacing : 0.05em;
-      white-space    : nowrap;
+      display: inline-block; font-size: 10px; font-weight: 500;
+      padding: 2px 7px; border-radius: var(--r-sm);
+      text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
     }
+    .tag.in  { background: var(--in-bg);  color: var(--in);  }
+    .tag.out { background: var(--out-bg); color: var(--out); }
 
-    .tag.in  { background: var(--c-in-bg);  color: var(--c-in);  }
-    .tag.out { background: var(--c-out-bg); color: var(--c-out); }
+    /* Empty */
+    .empty { text-align: center; padding: 2.5rem 1rem; color: var(--tx2); font-size: 13px; }
 
-    /* =====================================================
-       EMPTY STATE
-       ===================================================== */
-    .empty { text-align: center; padding: 2.5rem 1rem; color: var(--c-text-2); font-size: 13px; }
-
-    /* =====================================================
-       TOAST
-       ===================================================== */
+    /* Toast */
     .toast {
-      position       : fixed;
-      bottom         : 24px;
-      left           : 50%;
-      transform      : translateX(-50%) translateY(60px);
-      background     : var(--c-accent);
-      color          : #fff;
-      padding        : 10px 20px;
-      border-radius  : var(--radius-md);
-      font-size      : 13px;
-      font-weight    : 500;
-      opacity        : 0;
-      transition     : transform 0.25s, opacity 0.25s;
-      z-index        : 999;
-      pointer-events : none;
-      white-space    : nowrap;
-      max-width      : calc(100vw - 32px);
-      text-align     : center;
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--ac); color: #fff;
+      padding: 10px 20px; border-radius: var(--r-md);
+      font-size: 13px; font-weight: 500; opacity: 0;
+      transition: transform 0.25s, opacity 0.25s;
+      z-index: 999; pointer-events: none;
+      white-space: nowrap; max-width: calc(100vw - 32px); text-align: center;
     }
-
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* =====================================================
-       OVERLAY SCANNER
-       ===================================================== */
+    /* ===========================================
+       SCANNER OVERLAY
+    =========================================== */
     .scan-overlay {
-      display         : none;
-      position        : fixed;
-      inset           : 0;
-      background      : rgba(0,0,0,0.88);
-      z-index         : 100;
-      align-items     : flex-end;
-      justify-content : center;
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.9); z-index: 100;
+      align-items: flex-end; justify-content: center;
     }
-
     .scan-overlay.open { display: flex; }
 
     .scan-modal {
-      background    : var(--c-bg);
-      border-radius : var(--radius-lg) var(--radius-lg) 0 0;
-      padding       : 1.25rem;
-      width         : 100%;
-      max-width     : 520px;
-      max-height    : 95vh;
-      max-height    : 95dvh;
-      overflow-y    : auto;
-      text-align    : center;
+      background: var(--bg);
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      padding: 1.25rem; width: 100%; max-width: 520px;
+      max-height: 95dvh; overflow-y: auto; text-align: center;
     }
-
     .scan-handle {
-      width: 36px; height: 4px;
-      background: var(--c-border);
-      border-radius: 2px;
-      margin: 0 auto 14px;
+      width: 36px; height: 4px; background: var(--bd);
+      border-radius: 2px; margin: 0 auto 14px;
+    }
+    .scan-title {
+      font-size: 13px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 4px;
     }
 
-    .scan-modal-title {
-      font-size: 13px; font-weight: 500;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      margin-bottom: 4px;
+    /* Engine badge */
+    .scan-engine {
+      display: inline-block; font-size: 10px; font-weight: 500;
+      padding: 2px 10px; border-radius: 20px; margin-bottom: 10px;
+      text-transform: uppercase; letter-spacing: 0.06em;
     }
+    .scan-engine.native { background: #dcfce7; color: #15803d; }
+    .scan-engine.zxing  { background: #dbeafe; color: #1d4ed8; }
+    .scan-engine.none   { background: var(--bg3); color: var(--tx2); }
 
-    .scan-detected {
-      font-size: 11px; color: var(--c-in);
-      font-weight: 500; margin-bottom: 8px;
-      min-height: 16px; letter-spacing: 0.05em;
-    }
-
-    /* =====================================================
-       VIEWPORT KAMERA — rasio landscape untuk barcode batang
-       ===================================================== */
+    /* Viewport — landscape untuk barcode batang */
     .scan-viewport {
-      position     : relative;
-      width        : 100%;
-      aspect-ratio : 16 / 9;
-      background   : #000;
-      border-radius: var(--radius-md);
-      overflow     : hidden;
+      position: relative; width: 100%;
+      aspect-ratio: 16/9; background: #000;
+      border-radius: var(--r-md); overflow: hidden;
       margin-bottom: 10px;
     }
-
-    /* Video element utama */
     #scan-video {
-      width      : 100%;
-      height     : 100%;
-      object-fit : cover;
-      display    : block;
-    }
-
-    /* Canvas overlay untuk garis deteksi */
-    #scan-canvas {
-      position : absolute;
-      top: 0; left: 0;
+      position: absolute; inset: 0;
       width: 100%; height: 100%;
-      pointer-events: none;
+      object-fit: cover; display: block;
     }
 
-    /* =====================================================
-       ROI — kotak panduan scan di tengah
-       ===================================================== */
+    /* ROI — kotak panduan */
     .scan-roi {
-      position      : absolute;
-      top: 50%; left: 50%;
-      transform     : translate(-50%, -50%);
-      width         : 85%;
-      height        : 40%;
-      border        : 2px solid rgba(34,197,94,0.85);
-      border-radius : 4px;
-      pointer-events: none;
-      z-index       : 10;
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 88%; height: 48%;
+      border: 2px solid rgba(34,197,94,0.9);
+      border-radius: 4px; pointer-events: none; z-index: 5;
     }
-
-    /* Sudut dekoratif */
-    .scan-roi::before, .scan-roi::after {
-      content: ''; position: absolute;
-      width: 18px; height: 18px;
+    .roi-tl,.roi-tr,.roi-bl,.roi-br {
+      position: absolute; width: 20px; height: 20px;
       border-color: #22c55e; border-style: solid;
     }
-    .scan-roi::before { top:-2px; left:-2px; border-width:3px 0 0 3px; border-radius:3px 0 0 0; }
-    .scan-roi::after  { bottom:-2px; right:-2px; border-width:0 3px 3px 0; border-radius:0 0 3px 0; }
+    .roi-tl { top:-2px;    left:-2px;  border-width:3px 0 0 3px; border-radius:3px 0 0 0; }
+    .roi-tr { top:-2px;    right:-2px; border-width:3px 3px 0 0; border-radius:0 3px 0 0; }
+    .roi-bl { bottom:-2px; left:-2px;  border-width:0 0 3px 3px; border-radius:0 0 0 3px; }
+    .roi-br { bottom:-2px; right:-2px; border-width:0 3px 3px 0; border-radius:0 0 3px 0; }
 
-    /* Garis scan animasi */
-    .scan-line-h {
-      position  : absolute;
-      left: 5%; width: 90%; height: 1.5px;
-      background: rgba(34,197,94,0.8);
-      animation : scan-h 1.8s ease-in-out infinite;
+    /* Scan line */
+    .scan-line {
+      position: absolute; left: 5%; width: 90%; height: 2px;
+      background: linear-gradient(to right, transparent, #22c55e, transparent);
+      animation: scanline 1.6s ease-in-out infinite;
+    }
+    @keyframes scanline {
+      0%   { top:10%; opacity:.5; }
+      50%  { top:85%; opacity:1;  }
+      100% { top:10%; opacity:.5; }
     }
 
-    @keyframes scan-h {
-      0%   { top: 15%; opacity: 0.4; }
-      50%  { top: 82%; opacity: 1;   }
-      100% { top: 15%; opacity: 0.4; }
-    }
-
-    /* =====================================================
-       STATUS SCANNER
-       ===================================================== */
+    /* Status */
     .scan-status {
-      display: flex; align-items: center;
-      justify-content: center; gap: 6px;
-      font-size: 12px; color: var(--c-text-2);
-      margin-bottom: 10px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; font-size: 12px; color: var(--tx2);
+      margin-bottom: 10px; min-height: 20px;
     }
-
-    .scan-status-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--c-border); transition: background 0.3s;
+    .scan-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--bd); flex-shrink: 0; transition: background 0.3s;
     }
+    .scan-dot.loading { background: #f59e0b; animation: pulse .8s infinite; }
+    .scan-dot.active  { background: var(--in); animation: pulse 1.2s infinite; }
+    .scan-dot.ok      { background: var(--in); }
+    .scan-dot.error   { background: var(--out); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    .scan-status-dot.active  { background: var(--c-in); animation: pulse 1s infinite; }
-    .scan-status-dot.success { background: var(--c-in); }
-    .scan-status-dot.error   { background: var(--c-out); }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; } 50% { opacity: 0.35; }
-    }
-
-    /* =====================================================
-       TAB KAMERA / MANUAL
-       ===================================================== */
+    /* Tabs */
     .scan-tabs {
-      display: flex;
-      border: 1px solid var(--c-border);
-      border-radius: var(--radius-sm);
-      overflow: hidden; margin-bottom: 12px;
+      display: flex; border: 1px solid var(--bd);
+      border-radius: var(--r-sm); overflow: hidden; margin-bottom: 10px;
     }
-
     .scan-tab {
-      flex: 1; padding: 8px 0;
-      font-size: 12px; font-weight: 500;
+      flex: 1; padding: 9px 0; font-size: 12px; font-weight: 500;
       letter-spacing: 0.05em; text-transform: uppercase;
-      border: none; cursor: pointer;
-      background: transparent; color: var(--c-text-2);
-      transition: background 0.15s, color 0.15s;
+      border: none; cursor: pointer; background: transparent;
+      color: var(--tx2); transition: background .15s, color .15s;
+      min-height: 38px;
     }
+    .scan-tab.active { background: var(--ac); color: #fff; }
 
-    .scan-tab.active { background: var(--c-accent); color: #fff; }
-
-    /* Panel manual */
+    /* Manual */
     .manual-panel { display: none; padding: 4px 0 8px; }
     .manual-panel.show { display: block; }
-
     .scan-modal input[type="text"] {
-      margin-bottom: 10px;
-      font-family: var(--font-mono);
-      text-align: center; letter-spacing: 0.1em;
+      margin-bottom: 10px; text-align: center; letter-spacing: .1em;
     }
-
-    /* =====================================================
-       TOMBOL TUTUP SCANNER
-       ===================================================== */
-    .scan-close-btn {
-      width: 100%; padding: 12px;
-      background: var(--c-accent); color: #fff;
-      border: none; border-radius: var(--radius-sm);
-      cursor: pointer; font-size: 14px; font-weight: 500;
-      min-height: var(--touch-min); transition: opacity 0.15s;
-    }
-
-    .scan-close-btn:active { opacity: 0.85; }
 
     /* Tips */
     .scan-tips {
-      font-size: 11px; color: var(--c-text-2);
-      margin-bottom: 10px; line-height: 1.5;
+      font-size: 11px; color: var(--tx2);
+      line-height: 1.6; margin-bottom: 12px;
     }
 
-    /* =====================================================
-       RESPONSIVE — TABLET
-       ===================================================== */
+    /* Close */
+    .scan-close {
+      width: 100%; padding: 13px; background: var(--ac); color: #fff;
+      border: none; border-radius: var(--r-md); cursor: pointer;
+      font-size: 14px; font-weight: 500; min-height: var(--touch);
+    }
+    .scan-close:active { opacity: .85; }
+
+    /* ===========================================
+       RESPONSIVE
+    =========================================== */
     @media (max-width: 600px) {
-      body { padding: 0.75rem; padding-bottom: 2rem; }
+      body { padding: .75rem; padding-bottom: 2rem; }
       .stats-row { gap: 6px; }
       .stat-card { padding: 8px 10px; }
       .stat-label { font-size: 9px; }
       .stat-val { font-size: 18px; }
       .col-hide { display: none; }
     }
-
-    /* =====================================================
-       RESPONSIVE — MOBILE
-       ===================================================== */
     @media (max-width: 480px) {
       .form-grid-2 { grid-template-columns: 1fr; }
       .table-desktop { display: none; }
       .card-list { display: block; }
       .stat-val { font-size: 16px; }
       .stat-label { font-size: 8px; }
-      .scan-modal { border-radius: 16px 16px 0 0; padding: 1rem; }
+      .scan-modal { border-radius: 16px 16px 0 0; }
     }
-
-    /* =====================================================
-       SAFE AREA
-       ===================================================== */
     @supports (padding: env(safe-area-inset-bottom)) {
       body { padding-bottom: calc(2rem + env(safe-area-inset-bottom)); }
       .toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
@@ -679,673 +408,634 @@
 </head>
 
 <body>
-  <div class="container">
+<div class="container">
 
-    <!-- HEADER -->
-    <header class="header">
-      <div class="logo">Inventory <span>Lottemart</span></div>
-      <div class="header-right">
-        <div class="clock" id="clock">--:--:--</div>
+  <header class="header">
+    <div class="logo">Inventory <span>Lottemart</span></div>
+    <div class="clock" id="clock">--:--:--</div>
+  </header>
+
+  <div class="switch-row">
+    <button class="sw-btn active-in" id="btn-in"  onclick="setMode('in')">▲ Data Masuk</button>
+    <button class="sw-btn"           id="btn-out" onclick="setMode('out')">▼ Data Keluar</button>
+  </div>
+  <div class="mode-badge in" id="mode-badge">
+    <span class="dot in"></span> Mode: Data Masuk
+  </div>
+
+  <div class="form-card">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="inp-barcode">Barcode / Kode Barang</label>
+        <input type="text" id="inp-barcode"
+          placeholder="Scan atau ketik barcode..."
+          autocomplete="off" autocorrect="off"
+          autocapitalize="off" spellcheck="false" inputmode="text"/>
       </div>
-    </header>
-
-    <!-- SWITCH MODE -->
-    <div class="switch-row">
-      <button class="sw-btn active-in" id="btn-in"  onclick="setMode('in')">▲ Data Masuk</button>
-      <button class="sw-btn"           id="btn-out" onclick="setMode('out')">▼ Data Keluar</button>
-    </div>
-
-    <div class="mode-badge in" id="mode-badge">
-      <span class="dot in"></span> Mode: Data Masuk
-    </div>
-
-    <!-- FORM INPUT -->
-    <div class="form-card">
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="inp-barcode">Barcode / Kode Barang</label>
-          <input
-            type="text"
-            id="inp-barcode"
-            placeholder="Scan atau ketik barcode..."
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="off"
-            spellcheck="false"
-            inputmode="text"
-          />
-        </div>
-        <button class="scan-btn" onclick="openScanner()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3"  y="3"  width="5" height="5" rx="1"/>
-            <rect x="16" y="3"  width="5" height="5" rx="1"/>
-            <rect x="3"  y="16" width="5" height="5" rx="1"/>
-            <path d="M21 16h-3v3"/><path d="M21 21h-3"/>
-            <path d="M16 21v-3"/>
-            <path d="M12 3v3"/><path d="M12 9v1"/>
-            <path d="M12 13v3"/><path d="M12 19v2"/>
-            <path d="M3 12h3"/><path d="M9 12h1"/>
-            <path d="M13 12h3"/><path d="M19 12h2"/>
-          </svg>
-          Scan
-        </button>
-      </div>
-
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label for="inp-name">Nama Barang</label>
-          <input type="text" id="inp-name" placeholder="Nama barang (opsional)" />
-        </div>
-        <div class="form-group">
-          <label for="inp-qty">Qty</label>
-          <input type="number" id="inp-qty" placeholder="0" min="1" value="1" inputmode="numeric" />
-        </div>
-      </div>
-
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label for="inp-date">Tanggal</label>
-          <input type="date" id="inp-date" />
-        </div>
-        <div class="form-group">
-          <label for="inp-note">Keterangan</label>
-          <input type="text" id="inp-note" placeholder="Opsional..." />
-        </div>
-      </div>
-
-      <button class="submit-btn in" id="submit-btn" onclick="submitData()">
-        + Tambah Data Masuk
+      <button class="scan-btn" onclick="openScanner()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="5" height="5" rx="1"/>
+          <rect x="16" y="3" width="5" height="5" rx="1"/>
+          <rect x="3" y="16" width="5" height="5" rx="1"/>
+          <path d="M21 16h-3v3M21 21h-3M16 21v-3"/>
+          <path d="M12 3v3M12 9v1M12 13v3M12 19v2"/>
+          <path d="M3 12h3M9 12h1M13 12h3M19 12h2"/>
+        </svg>
+        Scan
       </button>
     </div>
-
-    <!-- STATISTIK -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">Total</div>
-        <div class="stat-val" id="stat-total">0</div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label for="inp-name">Nama Barang</label>
+        <input type="text" id="inp-name" placeholder="Opsional"/>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Masuk</div>
-        <div class="stat-val in" id="stat-in">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Keluar</div>
-        <div class="stat-val out" id="stat-out">0</div>
+      <div class="form-group">
+        <label for="inp-qty">Qty</label>
+        <input type="number" id="inp-qty" min="1" value="1" inputmode="numeric"/>
       </div>
     </div>
-
-    <!-- RIWAYAT -->
-    <div class="section-header">
-      <span class="section-title">Riwayat Inputan</span>
-      <div class="btn-actions">
-        <button class="btn-small" onclick="exportCSV()">Export CSV</button>
-        <button class="btn-small" onclick="clearAll()">Hapus Semua</button>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label for="inp-date">Tanggal</label>
+        <input type="date" id="inp-date"/>
+      </div>
+      <div class="form-group">
+        <label for="inp-note">Keterangan</label>
+        <input type="text" id="inp-note" placeholder="Opsional"/>
       </div>
     </div>
+    <button class="submit-btn in" id="submit-btn" onclick="submitData()">
+      + Tambah Data Masuk
+    </button>
+  </div>
 
-    <div class="filter-row">
-      <button class="filter-btn active" id="f-all" onclick="setFilter('all')">Semua</button>
-      <button class="filter-btn"        id="f-in"  onclick="setFilter('in')">Masuk</button>
-      <button class="filter-btn"        id="f-out" onclick="setFilter('out')">Keluar</button>
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total</div>
+      <div class="stat-val" id="stat-total">0</div>
     </div>
-
-    <div id="log-wrap"></div>
-
-  </div><!-- /container -->
-
-  <!-- OVERLAY SCANNER -->
-  <div class="scan-overlay" id="scan-overlay">
-    <div class="scan-modal">
-      <div class="scan-handle"></div>
-      <div class="scan-modal-title">Scan Barcode</div>
-      <div class="scan-detected" id="scan-detected"></div>
-
-      <!-- Viewport kamera -->
-      <div class="scan-viewport">
-        <video id="scan-video" autoplay muted playsinline></video>
-        <canvas id="scan-canvas"></canvas>
-        <div class="scan-roi">
-          <div class="scan-line-h"></div>
-        </div>
-      </div>
-
-      <!-- Status -->
-      <div class="scan-status">
-        <div class="scan-status-dot" id="scan-dot"></div>
-        <span id="scan-hint">Memulai kamera...</span>
-      </div>
-
-      <!-- Tab -->
-      <div class="scan-tabs">
-        <button class="scan-tab active" id="tab-cam"    onclick="switchTab('cam')">Kamera</button>
-        <button class="scan-tab"        id="tab-manual" onclick="switchTab('manual')">Manual</button>
-      </div>
-
-      <!-- Panel manual -->
-      <div class="manual-panel" id="manual-panel">
-        <input
-          type="text" id="scan-manual"
-          placeholder="Ketik barcode lalu tekan Enter"
-          onkeydown="if(event.key==='Enter') manualBarcode()"
-          autocomplete="off" autocorrect="off"
-          autocapitalize="off" spellcheck="false"
-          inputmode="text"
-        />
-      </div>
-
-      <div class="scan-tips">
-        Posisikan barcode di dalam kotak hijau · Jarak 10–20 cm · Pastikan cahaya cukup
-      </div>
-
-      <button class="scan-close-btn" onclick="closeScanner()">Tutup Scanner</button>
+    <div class="stat-card">
+      <div class="stat-label">Masuk</div>
+      <div class="stat-val in" id="stat-in">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Keluar</div>
+      <div class="stat-val out" id="stat-out">0</div>
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <div class="section-header">
+    <span class="section-title">Riwayat Inputan</span>
+    <div class="btn-actions">
+      <button class="btn-small" onclick="exportCSV()">Export CSV</button>
+      <button class="btn-small" onclick="clearAll()">Hapus Semua</button>
+    </div>
+  </div>
+  <div class="filter-row">
+    <button class="filter-btn active" id="f-all" onclick="setFilter('all')">Semua</button>
+    <button class="filter-btn"        id="f-in"  onclick="setFilter('in')">Masuk</button>
+    <button class="filter-btn"        id="f-out" onclick="setFilter('out')">Keluar</button>
+  </div>
+  <div id="log-wrap"></div>
 
-  <!-- =====================================================
-       JAVASCRIPT
-       ===================================================== -->
-  <script>
+</div>
 
-    /* --------------------------------------------------
-       KONSTANTA & STATE
-    -------------------------------------------------- */
-    const STORE_KEY        = 'inv_data_v1';
-    let currentMode        = 'in';
-    let currentFilter      = 'all';
-    let activeStream       = null;   /* MediaStream kamera aktif */
-    let zxingReader        = null;   /* instance ZXing */
-    let scanLoopActive     = false;  /* flag loop scan */
-    let lastScanned        = '';
-    let lastScannedAt      = 0;
-    const DEBOUNCE_MS      = 1500;
+<!-- SCANNER OVERLAY -->
+<div class="scan-overlay" id="scan-overlay">
+  <div class="scan-modal">
+    <div class="scan-handle"></div>
+    <div class="scan-title">Scan Barcode</div>
+    <div class="scan-engine none" id="scan-engine">Mendeteksi engine...</div>
 
-    /* --------------------------------------------------
-       DATABASE — localStorage
-    -------------------------------------------------- */
-    function getDB() {
-      try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
-      catch { return []; }
-    }
+    <div class="scan-viewport">
+      <video id="scan-video" autoplay muted playsinline></video>
+      <div class="scan-roi">
+        <div class="roi-tl"></div><div class="roi-tr"></div>
+        <div class="roi-bl"></div><div class="roi-br"></div>
+        <div class="scan-line"></div>
+      </div>
+    </div>
 
-    function saveDB(data) {
-      localStorage.setItem(STORE_KEY, JSON.stringify(data));
-    }
+    <div class="scan-status">
+      <div class="scan-dot loading" id="scan-dot"></div>
+      <span id="scan-hint">Memulai kamera...</span>
+    </div>
 
-    /* --------------------------------------------------
-       MODE SWITCH
-    -------------------------------------------------- */
-    function setMode(mode) {
-      currentMode = mode;
-      document.getElementById('btn-in').className  = 'sw-btn' + (mode === 'in'  ? ' active-in'  : '');
-      document.getElementById('btn-out').className = 'sw-btn' + (mode === 'out' ? ' active-out' : '');
-      const badge = document.getElementById('mode-badge');
-      badge.className = 'mode-badge ' + mode;
-      badge.innerHTML = `<span class="dot ${mode}"></span> Mode: Data ${mode === 'in' ? 'Masuk' : 'Keluar'}`;
-      const btn = document.getElementById('submit-btn');
-      btn.className   = 'submit-btn ' + mode;
-      btn.textContent = mode === 'in' ? '+ Tambah Data Masuk' : '- Tambah Data Keluar';
-    }
+    <div class="scan-tabs">
+      <button class="scan-tab active" id="tab-cam"    onclick="switchTab('cam')">📷 Kamera</button>
+      <button class="scan-tab"        id="tab-manual" onclick="switchTab('manual')">⌨️ Manual</button>
+    </div>
 
-    /* --------------------------------------------------
-       FILTER
-    -------------------------------------------------- */
-    function setFilter(f) {
-      currentFilter = f;
-      ['all', 'in', 'out'].forEach(x => {
-        document.getElementById('f-' + x).className = 'filter-btn' + (x === f ? ' active' : '');
-      });
-      renderLog();
-    }
+    <div class="manual-panel" id="manual-panel">
+      <input type="text" id="scan-manual"
+        placeholder="Ketik barcode lalu Enter"
+        onkeydown="if(event.key==='Enter') manualBarcode()"
+        autocomplete="off" autocorrect="off"
+        autocapitalize="off" spellcheck="false"/>
+    </div>
 
-    /* --------------------------------------------------
-       SUBMIT DATA
-    -------------------------------------------------- */
-    function submitData() {
-      const barcode = document.getElementById('inp-barcode').value.trim();
-      const name    = document.getElementById('inp-name').value.trim();
-      const qty     = parseInt(document.getElementById('inp-qty').value) || 0;
-      const date    = document.getElementById('inp-date').value;
-      const note    = document.getElementById('inp-note').value.trim();
+    <div class="scan-tips">
+      Arahkan barcode <strong>horizontal</strong> di dalam kotak hijau<br>
+      Jarak optimal <strong>10–20 cm</strong> · Pastikan cahaya cukup
+    </div>
 
-      if (!barcode) { showToast('Barcode wajib diisi!'); return; }
-      if (qty < 1)  { showToast('Qty minimal 1!');       return; }
+    <button class="scan-close" onclick="closeScanner()">Tutup Scanner</button>
+  </div>
+</div>
 
-      const record = {
-        id      : Date.now(),
-        mode    : currentMode,
-        barcode : barcode,
-        name    : name || barcode,
-        qty     : qty,
-        date    : date || new Date().toISOString().slice(0, 10),
-        note    : note,
-        time    : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-      };
+<div class="toast" id="toast"></div>
 
-      const db = getDB();
-      db.unshift(record);
-      saveDB(db);
+<script>
+'use strict';
 
-      document.getElementById('inp-barcode').value = '';
-      document.getElementById('inp-name').value    = '';
-      document.getElementById('inp-qty').value     = '1';
-      document.getElementById('inp-note').value    = '';
+/* ================================================
+   STATE
+================================================ */
+const DB_KEY   = 'inv_data_v1';
+const DEBOUNCE = 1500;
 
-      renderLog();
-      updateStats();
-      showToast(currentMode === 'in' ? 'Data masuk ditambahkan!' : 'Data keluar ditambahkan!');
-      document.getElementById('inp-barcode').focus();
-    }
+let mode       = 'in';
+let filter     = 'all';
+let camStream  = null;
+let scanTimer  = null;
+let lastCode   = '';
+let lastTime   = 0;
 
-    /* --------------------------------------------------
-       RENDER LOG
-    -------------------------------------------------- */
-    function renderLog() {
-      const db       = getDB();
-      const filtered = currentFilter === 'all' ? db : db.filter(r => r.mode === currentFilter);
-      const wrap     = document.getElementById('log-wrap');
+/* Engine yang akan dipakai — ditentukan saat init */
+let ENGINE     = 'none'; /* 'native' | 'zxing' | 'none' */
 
-      if (!filtered.length) {
-        wrap.innerHTML = '<div class="empty">Belum ada inputan</div>';
+/* ================================================
+   DETEKSI ENGINE
+   - BarcodeDetector: Chrome Android & Desktop
+   - ZXing: iPhone Chrome/Safari & browser lain
+================================================ */
+async function detectEngine() {
+  /* BarcodeDetector — built-in Chrome, sangat cepat */
+  if ('BarcodeDetector' in window) {
+    try {
+      const fmts = await BarcodeDetector.getSupportedFormats();
+      /* Pastikan EAN-13 didukung (format utama retail) */
+      if (fmts.includes('ean_13') || fmts.length > 3) {
+        ENGINE = 'native';
+        console.log('[Scanner] Engine: BarcodeDetector Native');
         return;
       }
+    } catch(e) { /* lanjut ke fallback */ }
+  }
 
-      const isMobile = window.innerWidth <= 480;
-      wrap.innerHTML  = isMobile ? renderCards(filtered) : renderTable(filtered);
-    }
+  /* ZXing — fallback untuk iPhone & browser lama */
+  if (typeof ZXing !== 'undefined') {
+    ENGINE = 'zxing';
+    console.log('[Scanner] Engine: ZXing Fallback');
+    return;
+  }
 
-    function renderTable(data) {
-      let html = `<div class="table-wrap table-desktop"><table>
-        <thead><tr>
-          <th>Tanggal</th><th>Waktu</th><th>Barcode</th>
-          <th>Nama Barang</th><th style="text-align:right">Qty</th>
-          <th>Tipe</th><th class="col-hide">Keterangan</th>
-        </tr></thead><tbody>`;
-      data.forEach(r => {
-        html += `<tr>
-          <td>${r.date}</td><td>${r.time||'-'}</td>
-          <td class="td-barcode">${r.barcode}</td><td>${r.name}</td>
-          <td class="td-qty">${r.qty}</td>
-          <td><span class="tag ${r.mode}">${r.mode==='in'?'Masuk':'Keluar'}</span></td>
-          <td class="td-note col-hide">${r.note||'-'}</td>
-        </tr>`;
+  ENGINE = 'none';
+  console.warn('[Scanner] Tidak ada engine tersedia');
+}
+
+/* ================================================
+   DATABASE
+================================================ */
+function getDB() {
+  try { return JSON.parse(localStorage.getItem(DB_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveDB(d) { localStorage.setItem(DB_KEY, JSON.stringify(d)); }
+
+/* ================================================
+   MODE SWITCH
+================================================ */
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-in').className  = 'sw-btn' + (m==='in'  ? ' active-in'  : '');
+  document.getElementById('btn-out').className = 'sw-btn' + (m==='out' ? ' active-out' : '');
+  const badge = document.getElementById('mode-badge');
+  badge.className = 'mode-badge ' + m;
+  badge.innerHTML = `<span class="dot ${m}"></span> Mode: Data ${m==='in'?'Masuk':'Keluar'}`;
+  const btn = document.getElementById('submit-btn');
+  btn.className   = 'submit-btn ' + m;
+  btn.textContent = m==='in' ? '+ Tambah Data Masuk' : '- Tambah Data Keluar';
+}
+
+function setFilter(f) {
+  filter = f;
+  ['all','in','out'].forEach(x => {
+    document.getElementById('f-'+x).className = 'filter-btn' + (x===f ? ' active' : '');
+  });
+  renderLog();
+}
+
+/* ================================================
+   SUBMIT DATA
+================================================ */
+function submitData() {
+  const barcode = document.getElementById('inp-barcode').value.trim();
+  const name    = document.getElementById('inp-name').value.trim();
+  const qty     = parseInt(document.getElementById('inp-qty').value) || 0;
+  const date    = document.getElementById('inp-date').value;
+  const note    = document.getElementById('inp-note').value.trim();
+  if (!barcode) { toast('Barcode wajib diisi!'); return; }
+  if (qty < 1)  { toast('Qty minimal 1!');       return; }
+  const db = getDB();
+  db.unshift({
+    id: Date.now(), mode, barcode,
+    name: name || barcode, qty,
+    date: date || new Date().toISOString().slice(0,10), note,
+    time: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}),
+  });
+  saveDB(db);
+  ['inp-barcode','inp-name','inp-note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('inp-qty').value = '1';
+  renderLog(); updateStats();
+  toast(mode==='in' ? 'Data masuk ditambahkan!' : 'Data keluar ditambahkan!');
+  document.getElementById('inp-barcode').focus();
+}
+
+/* ================================================
+   RENDER LOG
+================================================ */
+function renderLog() {
+  const db   = getDB();
+  const data = filter==='all' ? db : db.filter(r => r.mode===filter);
+  const wrap = document.getElementById('log-wrap');
+  if (!data.length) { wrap.innerHTML = '<div class="empty">Belum ada inputan</div>'; return; }
+  wrap.innerHTML = window.innerWidth <= 480 ? renderCards(data) : renderTable(data);
+}
+
+function renderTable(data) {
+  let h = `<div class="table-wrap table-desktop"><table>
+    <thead><tr><th>Tanggal</th><th>Waktu</th><th>Barcode</th>
+    <th>Nama Barang</th><th style="text-align:right">Qty</th>
+    <th>Tipe</th><th class="col-hide">Keterangan</th></tr></thead><tbody>`;
+  data.forEach(r => {
+    h += `<tr>
+      <td>${r.date}</td><td>${r.time||'-'}</td>
+      <td class="td-bc">${r.barcode}</td><td>${r.name}</td>
+      <td class="td-qty">${r.qty}</td>
+      <td><span class="tag ${r.mode}">${r.mode==='in'?'Masuk':'Keluar'}</span></td>
+      <td class="td-note col-hide">${r.note||'-'}</td></tr>`;
+  });
+  return h + '</tbody></table></div>';
+}
+
+function renderCards(data) {
+  let h = '<div class="table-wrap card-list">';
+  data.forEach(r => {
+    h += `<div class="record-card">
+      <div class="rc-top"><div class="rc-name">${r.name}</div><div class="rc-qty">×${r.qty}</div></div>
+      <div class="rc-meta">
+        <span class="tag ${r.mode}">${r.mode==='in'?'Masuk':'Keluar'}</span>
+        <span class="rc-bc">${r.barcode}</span>
+        <span class="rc-date">${r.date} ${r.time||''}</span>
+        ${r.note ? `<span class="rc-note">${r.note}</span>` : ''}
+      </div></div>`;
+  });
+  return h + '</div>';
+}
+
+function updateStats() {
+  const db = getDB();
+  document.getElementById('stat-total').textContent = db.length;
+  document.getElementById('stat-in').textContent    = db.filter(r => r.mode==='in').length;
+  document.getElementById('stat-out').textContent   = db.filter(r => r.mode==='out').length;
+}
+
+function clearAll() {
+  if (!confirm('Hapus semua data?')) return;
+  saveDB([]); renderLog(); updateStats(); toast('Data dihapus');
+}
+
+function exportCSV() {
+  const db = getDB();
+  if (!db.length) { toast('Tidak ada data'); return; }
+  const rows = db.map(r =>
+    `${r.date},${r.time||''},"${r.barcode}","${r.name}",${r.qty},${r.mode==='in'?'Masuk':'Keluar'},"${r.note||''}"`
+  );
+  const csv = ['Tanggal,Waktu,Barcode,Nama,Qty,Tipe,Keterangan', ...rows].join('\n');
+  const a   = Object.assign(document.createElement('a'), {
+    href     : URL.createObjectURL(new Blob(['\uFEFF'+csv], {type:'text/csv'})),
+    download : 'inventory_' + new Date().toISOString().slice(0,10) + '.csv',
+  });
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function setStatus(state, msg) {
+  document.getElementById('scan-dot').className    = 'scan-dot ' + state;
+  document.getElementById('scan-hint').textContent = msg;
+}
+
+/* ================================================
+   OPEN SCANNER
+================================================ */
+async function openScanner() {
+  lastCode = ''; lastTime = 0;
+  document.getElementById('scan-overlay').classList.add('open');
+  setStatus('loading', 'Memulai kamera...');
+  switchTab('cam');
+  await startCamera();
+}
+
+/* ================================================
+   KAMERA — fallback bertahap
+   Kunci: gunakan resolusi RENDAH dulu (640x480)
+   agar semua HP bisa handle, bukan HD langsung
+================================================ */
+async function startCamera() {
+  const video = document.getElementById('scan-video');
+
+  /*
+   * URUTAN PENTING:
+   * - Mulai dari resolusi RENDAH supaya kamera cepat ready
+   * - Barcode EAN-13 terbaca baik di 640x480
+   * - HD justru bikin lambat di HP lama
+   */
+  const tries = [
+    /* 1. Kamera belakang 640x480 — optimal untuk barcode */
+    { video: { facingMode: { exact: 'environment' }, width: 640, height: 480 } },
+    /* 2. Kamera belakang tanpa resolusi fix */
+    { video: { facingMode: { exact: 'environment' } } },
+    /* 3. Kamera belakang preference (bukan exact — lebih kompatibel iPhone) */
+    { video: { facingMode: 'environment', width: 640, height: 480 } },
+    /* 4. Kamera belakang preference saja */
+    { video: { facingMode: 'environment' } },
+    /* 5. Kamera apapun 640x480 */
+    { video: { width: 640, height: 480 } },
+    /* 6. Fallback paling dasar — pasti jalan */
+    { video: true },
+  ];
+
+  for (const c of tries) {
+    try {
+      camStream       = await navigator.mediaDevices.getUserMedia(c);
+      video.srcObject = camStream;
+
+      /* Tunggu metadata video siap */
+      await new Promise(resolve => {
+        if (video.readyState >= 1) { resolve(); return; }
+        video.onloadedmetadata = resolve;
+        setTimeout(resolve, 3000);
       });
-      return html + '</tbody></table></div>';
+
+      await video.play();
+
+      console.log(`[Scanner] Kamera OK: ${video.videoWidth}x${video.videoHeight}`);
+      setStatus('active', 'Arahkan barcode ke kotak hijau...');
+      startEngine(video);
+      return; /* sukses */
+
+    } catch(e) {
+      console.warn('[Scanner] Kamera gagal, coba berikutnya:', e.message);
+      stopCamera();
     }
+  }
 
-    function renderCards(data) {
-      let html = '<div class="table-wrap card-list">';
-      data.forEach(r => {
-        html += `<div class="record-card">
-          <div class="rc-top">
-            <div class="rc-name">${r.name}</div>
-            <div class="rc-qty">×${r.qty}</div>
-          </div>
-          <div class="rc-meta">
-            <span class="tag ${r.mode}">${r.mode==='in'?'Masuk':'Keluar'}</span>
-            <span class="rc-barcode">${r.barcode}</span>
-            <span class="rc-date">${r.date} ${r.time||''}</span>
-            ${r.note?`<span class="rc-note">${r.note}</span>`:''}
-          </div>
-        </div>`;
-      });
-      return html + '</div>';
+  setStatus('error', 'Kamera tidak bisa diakses — pakai tab Manual');
+}
+
+function stopCamera() {
+  if (camStream) {
+    camStream.getTracks().forEach(t => t.stop());
+    camStream = null;
+  }
+}
+
+/* ================================================
+   ENGINE SELECTOR
+================================================ */
+function startEngine(video) {
+  if (ENGINE === 'native') startNative(video);
+  else if (ENGINE === 'zxing') startZXing(video);
+  else setStatus('error', 'Scanner tidak tersedia — gunakan tab Manual');
+}
+
+/* ================================================
+   ENGINE 1 — BarcodeDetector
+   Chrome Android & Desktop, diproses oleh OS
+   Sangat cepat, tidak membebani CPU
+================================================ */
+async function startNative(video) {
+  let detector;
+
+  /* Coba dengan daftar format dulu */
+  const FORMATS = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','qr_code'];
+  try {
+    detector = new BarcodeDetector({ formats: FORMATS });
+  } catch(e) {
+    /* Beberapa device tidak support semua format — coba tanpa list */
+    try {
+      detector = new BarcodeDetector();
+    } catch(e2) {
+      /* BarcodeDetector ada tapi gagal init — fallback ZXing */
+      console.warn('[Scanner] BarcodeDetector init gagal, fallback ZXing');
+      ENGINE = 'zxing';
+      startZXing(video);
+      return;
     }
+  }
 
-    /* --------------------------------------------------
-       STATISTIK
-    -------------------------------------------------- */
-    function updateStats() {
-      const db = getDB();
-      document.getElementById('stat-total').textContent = db.length;
-      document.getElementById('stat-in').textContent    = db.filter(r => r.mode === 'in').length;
-      document.getElementById('stat-out').textContent   = db.filter(r => r.mode === 'out').length;
+  /* Test dulu sebelum loop — pastikan detector benar-benar jalan */
+  try {
+    await detector.detect(video);
+  } catch(e) {
+    if (e.name !== 'TypeError') { /* TypeError normal kalau video belum ada frame */
+      ENGINE = 'zxing';
+      startZXing(video);
+      return;
     }
+  }
 
-    /* --------------------------------------------------
-       HAPUS SEMUA
-    -------------------------------------------------- */
-    function clearAll() {
-      if (!confirm('Yakin ingin menghapus semua data riwayat?')) return;
-      saveDB([]); renderLog(); updateStats();
-      showToast('Semua data berhasil dihapus');
-    }
+  async function tick() {
+    if (!camStream) return;
 
-    /* --------------------------------------------------
-       EXPORT CSV
-    -------------------------------------------------- */
-    function exportCSV() {
-      const db = getDB();
-      if (!db.length) { showToast('Tidak ada data untuk diexport'); return; }
-      const header = 'Tanggal,Waktu,Barcode,Nama Barang,Qty,Tipe,Keterangan';
-      const rows   = db.map(r =>
-        `${r.date},${r.time||''},"${r.barcode}","${r.name}",${r.qty},` +
-        `${r.mode==='in'?'Masuk':'Keluar'},"${r.note||''}"`
-      );
-      const csv  = [header, ...rows].join('\n');
-      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href = url;
-      a.download = 'inventory_' + new Date().toISOString().slice(0, 10) + '.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    /* --------------------------------------------------
-       TOAST
-    -------------------------------------------------- */
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 2200);
-    }
-
-    /* --------------------------------------------------
-       STATUS UI SCANNER
-    -------------------------------------------------- */
-    function setScanStatus(state, msg) {
-      document.getElementById('scan-dot').className  = 'scan-status-dot ' + state;
-      document.getElementById('scan-hint').textContent = msg;
-    }
-
-    /* --------------------------------------------------
-       SCANNER — buka modal & mulai kamera
-    -------------------------------------------------- */
-    async function openScanner() {
-      lastScanned   = '';
-      lastScannedAt = 0;
-      document.getElementById('scan-overlay').classList.add('open');
-      document.getElementById('scan-detected').textContent = '';
-      setScanStatus('', 'Memulai kamera...');
-      switchTab('cam');
-      await startCamera();
-    }
-
-    /* --------------------------------------------------
-       KAMERA — akses & tampilkan di <video>
-       Coba beberapa konfigurasi agar kompatibel
-       di semua perangkat (Android, iPhone, PC)
-    -------------------------------------------------- */
-    async function startCamera() {
-      const video = document.getElementById('scan-video');
-
-      /* Daftar konfigurasi kamera — dicoba urut dari terbaik */
-      const constraints = [
-        /* 1. Kamera belakang HD */
-        { video: { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
-        /* 2. Kamera belakang standard */
-        { video: { facingMode: 'environment' } },
-        /* 3. Kamera mana saja dengan HD */
-        { video: { width: { ideal: 1280 }, height: { ideal: 720 } } },
-        /* 4. Kamera mana saja — fallback paling dasar */
-        { video: true },
-      ];
-
-      for (const constraint of constraints) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia(constraint);
-          activeStream      = stream;
-          video.srcObject   = stream;
-
-          /* Tunggu video siap diputar */
-          await new Promise((resolve, reject) => {
-            video.onloadedmetadata = resolve;
-            video.onerror          = reject;
-            setTimeout(resolve, 3000); /* timeout 3 detik */
-          });
-
-          await video.play();
-
-          /* Aktifkan torch/flash jika ada (Android Chrome) */
-          tryEnableTorch(stream);
-
-          setScanStatus('active', 'Arahkan barcode ke kotak hijau...');
-          startScanLoop();
-          return; /* berhasil — hentikan loop */
-
-        } catch (err) {
-          console.warn('Camera constraint failed, trying next...', err.message);
-          if (activeStream) {
-            activeStream.getTracks().forEach(t => t.stop());
-            activeStream = null;
-          }
-        }
-      }
-
-      /* Semua konfigurasi gagal */
-      setScanStatus('error', 'Kamera tidak bisa diakses. Coba tab Manual.');
-    }
-
-    /* --------------------------------------------------
-       TORCH — nyalakan flash kamera belakang jika ada
-    -------------------------------------------------- */
-    function tryEnableTorch(stream) {
+    /* Pastikan video sudah punya frame */
+    if (video.readyState >= 2 && !video.paused) {
       try {
-        const track = stream.getVideoTracks()[0];
-        if (track && track.getCapabilities) {
-          const caps = track.getCapabilities();
-          if (caps.torch) {
-            track.applyConstraints({ advanced: [{ torch: false }] });
-          }
+        const results = await detector.detect(video);
+        if (results && results.length > 0) {
+          const best = results[0];
+          if (best.rawValue) onDetected(best.rawValue);
         }
-      } catch (e) { /* torch tidak wajib */ }
-    }
-
-    /* --------------------------------------------------
-       SCAN LOOP — baca frame video tiap 200ms via ZXing
-       Lebih reliable daripada decodeFromVideoDevice
-       karena kita kontrol sendiri timing-nya
-    -------------------------------------------------- */
-    function startScanLoop() {
-      if (typeof ZXing === 'undefined') {
-        setScanStatus('error', 'Library scanner tidak dimuat. Gunakan tab Manual.');
-        return;
-      }
-
-      /* Buat reader dengan semua format barcode */
-      const hints = new Map();
-      const formats = [
-        ZXing.BarcodeFormat.EAN_13,
-        ZXing.BarcodeFormat.EAN_8,
-        ZXing.BarcodeFormat.UPC_A,
-        ZXing.BarcodeFormat.UPC_E,
-        ZXing.BarcodeFormat.CODE_128,
-        ZXing.BarcodeFormat.CODE_39,
-        ZXing.BarcodeFormat.ITF,
-        ZXing.BarcodeFormat.QR_CODE,
-        ZXing.BarcodeFormat.DATA_MATRIX,
-      ];
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
-      /* TRY_HARDER = usaha lebih keras untuk baca barcode sulit */
-      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-
-      zxingReader    = new ZXing.MultiFormatReader();
-      zxingReader.setHints(hints);
-      scanLoopActive = true;
-
-      const video  = document.getElementById('scan-video');
-      const canvas = document.getElementById('scan-canvas');
-      const ctx    = canvas.getContext('2d');
-
-      function tick() {
-        if (!scanLoopActive) return;
-
-        /* Pastikan video sudah punya frame */
-        if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
-          /* Sesuaikan canvas dengan ukuran video actual */
-          canvas.width  = video.videoWidth;
-          canvas.height = video.videoHeight;
-
-          /* Gambar frame video ke canvas */
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-          try {
-            /* Ambil data pixel dari canvas */
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const luminance = new ZXing.RGBLuminanceSource(
-              imageData.data,
-              canvas.width,
-              canvas.height
-            );
-            const binaryBitmap = new ZXing.BinaryBitmap(
-              new ZXing.HybridBinarizer(luminance)
-            );
-
-            /* Coba decode barcode */
-            const result = zxingReader.decode(binaryBitmap);
-
-            if (result) {
-              const code = result.getText();
-              onBarcodeDetected(code, result.getBarcodeFormat());
-            }
-
-          } catch (e) {
-            /* NotFoundException normal — artinya tidak ada barcode di frame ini */
-            /* Jangan tampilkan error, lanjut scan */
-          }
-        }
-
-        /* Loop berikutnya setelah 200ms */
-        setTimeout(tick, 200);
-      }
-
-      tick(); /* mulai loop */
-    }
-
-    /* --------------------------------------------------
-       CALLBACK — barcode berhasil terdeteksi
-    -------------------------------------------------- */
-    function onBarcodeDetected(code, format) {
-      if (!code || code.length < 3) return;
-
-      /* Debounce — cegah scan ganda */
-      const now = Date.now();
-      if (code === lastScanned && (now - lastScannedAt) < DEBOUNCE_MS) return;
-
-      lastScanned   = code;
-      lastScannedAt = now;
-
-      /* Label format barcode */
-      const fmtLabel = {
-        14 : 'EAN-13', 13: 'EAN-8',
-        1  : 'UPC-A',  15: 'UPC-E',
-        7  : 'Code 128', 4: 'Code 39',
-        11 : 'ITF',    11: 'QR Code',
-      };
-
-      const label = (format !== undefined && fmtLabel[format]) || 'Barcode';
-      document.getElementById('scan-detected').textContent = `✓ Terdeteksi: ${label}`;
-      setScanStatus('success', `Berhasil membaca: ${code}`);
-
-      /* Isi input utama */
-      document.getElementById('inp-barcode').value = code;
-
-      /* Feedback haptic */
-      if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
-
-      showToast(`${label} berhasil discan!`);
-
-      /* Tutup scanner setelah feedback terlihat */
-      setTimeout(() => closeScanner(), 700);
-    }
-
-    /* --------------------------------------------------
-       SCANNER — tutup & bersihkan semua resource
-    -------------------------------------------------- */
-    function closeScanner() {
-      /* Hentikan loop scan */
-      scanLoopActive = false;
-      zxingReader    = null;
-
-      /* Matikan kamera */
-      if (activeStream) {
-        activeStream.getTracks().forEach(t => t.stop());
-        activeStream = null;
-      }
-
-      /* Reset video element */
-      const video = document.getElementById('scan-video');
-      video.srcObject = null;
-
-      /* Bersihkan canvas */
-      const canvas = document.getElementById('scan-canvas');
-      const ctx    = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      document.getElementById('scan-overlay').classList.remove('open');
-      document.getElementById('scan-detected').textContent = '';
-      setScanStatus('', 'Memulai kamera...');
-    }
-
-    /* --------------------------------------------------
-       TAB SWITCH — Kamera / Manual
-    -------------------------------------------------- */
-    function switchTab(tab) {
-      document.getElementById('tab-cam').className    = 'scan-tab' + (tab === 'cam'    ? ' active' : '');
-      document.getElementById('tab-manual').className = 'scan-tab' + (tab === 'manual' ? ' active' : '');
-      document.getElementById('manual-panel').className = 'manual-panel' + (tab === 'manual' ? ' show' : '');
-      if (tab === 'manual') {
-        setTimeout(() => document.getElementById('scan-manual').focus(), 100);
+      } catch(e) {
+        /* Error saat detect — tidak ada barcode, lanjut */
       }
     }
 
-    /* --------------------------------------------------
-       MANUAL INPUT
-    -------------------------------------------------- */
-    function manualBarcode() {
-      const val = document.getElementById('scan-manual').value.trim();
-      if (!val) return;
-      document.getElementById('inp-barcode').value = val;
-      document.getElementById('scan-manual').value = '';
-      closeScanner();
-      showToast('Barcode dimasukkan!');
+    /* 80ms = ~12fps — cukup cepat tanpa membebani CPU */
+    scanTimer = setTimeout(tick, 80);
+  }
+
+  tick();
+}
+
+/* ================================================
+   ENGINE 2 — ZXing (Fallback)
+   iPhone Chrome/Safari & browser tanpa BarcodeDetector
+   
+   KUNCI PERFORMA: gunakan resolusi KECIL di canvas
+   Resize ke 400px sebelum decode = 3-5x lebih cepat
+================================================ */
+function startZXing(video) {
+  if (typeof ZXing === 'undefined') {
+    setStatus('error', 'Scanner tidak tersedia — gunakan tab Manual');
+    return;
+  }
+
+  /* Setup ZXing dengan semua format barcode retail */
+  const hints = new Map([
+    [ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+      ZXing.BarcodeFormat.EAN_13,
+      ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,
+      ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128,
+      ZXing.BarcodeFormat.CODE_39,
+      ZXing.BarcodeFormat.ITF,
+      ZXing.BarcodeFormat.QR_CODE,
+    ]],
+    /* TRY_HARDER = baca barcode yang susah/miring */
+    [ZXing.DecodeHintType.TRY_HARDER, true],
+    /* PURE_BARCODE = skip pencarian, langsung decode */
+    [ZXing.DecodeHintType.PURE_BARCODE, false],
+  ]);
+
+  const reader = new ZXing.MultiFormatReader();
+  reader.setHints(hints);
+
+  /*
+   * TRICK PERFORMA:
+   * Resize video frame ke lebar 400px sebelum decode
+   * ZXing jauh lebih cepat di resolusi kecil
+   * Barcode masih terbaca dengan baik di 400px
+   */
+  const SCAN_W  = 400;
+  const canvas  = document.createElement('canvas');
+  const ctx     = canvas.getContext('2d', { willReadFrequently: true });
+
+  function tick() {
+    if (!camStream) return;
+
+    if (video.readyState >= 2 && video.videoWidth > 0) {
+      /* Hitung tinggi proporsional */
+      const ratio    = video.videoHeight / video.videoWidth;
+      canvas.width   = SCAN_W;
+      canvas.height  = Math.round(SCAN_W * ratio);
+
+      /* Gambar frame dengan resize otomatis */
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      try {
+        const imgData  = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const lumSrc   = new ZXing.RGBLuminanceSource(imgData.data, canvas.width, canvas.height);
+        const binBmp   = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lumSrc));
+        const result   = reader.decode(binBmp);
+        if (result) onDetected(result.getText());
+      } catch(e) {
+        /* NotFoundException — normal, tidak ada barcode di frame ini */
+      }
     }
 
-    /* --------------------------------------------------
-       JAM REAL-TIME
-    -------------------------------------------------- */
-    function updateClock() {
-      document.getElementById('clock').textContent =
-        new Date().toLocaleTimeString('id-ID');
-    }
+    /* 120ms = ~8fps — cukup untuk ZXing tanpa lag */
+    scanTimer = setTimeout(tick, 120);
+  }
 
-    /* --------------------------------------------------
-       RE-RENDER saat resize
-    -------------------------------------------------- */
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(renderLog, 200);
-    });
+  tick();
+}
 
-    /* --------------------------------------------------
-       KEYBOARD SHORTCUT
-    -------------------------------------------------- */
-    document.getElementById('inp-barcode').addEventListener('keydown', e => {
-      if (e.key === 'Enter') document.getElementById('inp-qty').focus();
-    });
+/* ================================================
+   CALLBACK — barcode berhasil terdeteksi
+================================================ */
+function onDetected(code) {
+  if (!code || code.trim().length < 3) return;
 
-    document.getElementById('inp-qty').addEventListener('keydown', e => {
-      if (e.key === 'Enter') submitData();
-    });
+  /* Debounce — cegah double scan */
+  const now = Date.now();
+  if (code === lastCode && (now - lastTime) < DEBOUNCE) return;
+  lastCode = code; lastTime = now;
 
-    /* --------------------------------------------------
-       INISIALISASI
-    -------------------------------------------------- */
-    (function init() {
-      document.getElementById('inp-date').value =
-        new Date().toISOString().slice(0, 10);
-      updateClock();
-      setInterval(updateClock, 1000);
-      renderLog();
-      updateStats();
-    })();
+  console.log('[Scanner] Detected:', code);
 
+  setStatus('ok', '✓ ' + code);
+  document.getElementById('inp-barcode').value = code;
+  if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+  toast('Barcode berhasil discan!');
 
-  </script>
+  /* Delay sedikit biar user lihat feedback */
+  setTimeout(() => closeScanner(), 700);
+}
+
+/* ================================================
+   CLOSE SCANNER — bersihkan semua resource
+================================================ */
+function closeScanner() {
+  if (scanTimer) { clearTimeout(scanTimer); scanTimer = null; }
+  stopCamera();
+  const video = document.getElementById('scan-video');
+  if (video) video.srcObject = null;
+  document.getElementById('scan-overlay').classList.remove('open');
+  setStatus('loading', 'Memulai kamera...');
+}
+
+/* ================================================
+   TAB & MANUAL INPUT
+================================================ */
+function switchTab(tab) {
+  document.getElementById('tab-cam').className    = 'scan-tab' + (tab==='cam'    ? ' active' : '');
+  document.getElementById('tab-manual').className = 'scan-tab' + (tab==='manual' ? ' active' : '');
+  document.getElementById('manual-panel').className = 'manual-panel' + (tab==='manual' ? ' show' : '');
+  if (tab === 'manual') setTimeout(() => document.getElementById('scan-manual').focus(), 100);
+}
+
+function manualBarcode() {
+  const v = document.getElementById('scan-manual').value.trim();
+  if (!v) return;
+  document.getElementById('inp-barcode').value = v;
+  document.getElementById('scan-manual').value = '';
+  closeScanner();
+  toast('Barcode dimasukkan!');
+}
+
+/* ================================================
+   KEYBOARD & RESIZE
+================================================ */
+document.getElementById('inp-barcode').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('inp-qty').focus();
+});
+document.getElementById('inp-qty').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitData();
+});
+
+let rTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(rTimer);
+  rTimer = setTimeout(renderLog, 200);
+});
+
+/* ================================================
+   CLOCK
+================================================ */
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('id-ID');
+}
+
+/* ================================================
+   INIT
+================================================ */
+(async function init() {
+  document.getElementById('inp-date').value = new Date().toISOString().slice(0,10);
+  updateClock();
+  setInterval(updateClock, 1000);
+  renderLog();
+  updateStats();
+  await detectEngine();
+})();
+</script>
 </body>
 </html>
